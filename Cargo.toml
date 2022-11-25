@@ -1,0 +1,13 @@
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.22.0", features =["full"] }
+axum = "0.5.17"
+askama = { git = "https://github.com/djc/askama" }
+anyhow = "1.0.66"
+askama_axum = { git = "https://github.com/djc/askama" }
