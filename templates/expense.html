@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{%- import "components.html" as components -%}
+
+{% block content %}
+
+{% call components::subpage_header(nobt_url, name) %}
+
+<div class="bg-white p-4 space-y-4">
+    <section class="space-y-4">
+        <h2 class="text-darkGrey text-xs">Debtee</h2>
+        <ul class="flex flex-col gap-4">
+            <li>
+                    <span class="block flex items-center gap-4">
+                        {% call components::avatar(debtee_initials) %}
+                        <span class="flex-grow">{{ debtee_name }} paid this bill.</span>
+                    </span>
+            </li>
+            <li>
+                    <span class="block flex items-center gap-4">
+                        {% call components::icon("access_time") %}
+                        <span class="flex-grow">Added on {{ added_on }}.</span>
+                    </span>
+            </li>
+            <li>
+                    <span class="block flex items-center gap-4">
+                        {% call components::icon("credit_card") %}
+                        <span class="flex-grow">The invoice total is {{ total }}.</span>
+                    </span>
+            </li>
+        </ul>
+    </section>
+    <section class="space-y-4">
+        <h2 class="text-darkGrey text-xs">Debtors</h2>
+        <ul class="flex flex-col gap-4">
+            {% for debtor in debtors %}
+            <li>
+                    <span class="block flex items-center gap-4">
+                        {% call components::avatar(debtor.initials) %}
+                        <span class="flex-grow">{{ debtor.name }}</span>
+                        <span class="text-red">{{ debtor.amount_owed }}</span>
+                    </span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% if !deleted %}
+    <section class="space-y-4">
+        <h2 class="text-darkGrey text-xs">Actions</h2>
+        <ul>
+            <li>
+                <form action="{{ delete_url }}" method="post" hx-confirm="Deleting a bill is permanent. Proceed?">
+                    <button type="submit" class="block flex items-center gap-4 w-full">
+                        <span class="material-symbols-outlined text-darkGrey">delete</span>
+                        <span>Delete this bill</span>
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </section>
+    {% endif %}
+</div>
+
+{% endblock %}

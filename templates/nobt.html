@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{%- import "components.html" as components -%}
+
+{% block content %}
+
+<header class="bg-grey text-white px-4 h-16 flex items-center font-header">
+    <h1 class="text-xl">nobt.io</h1>
+</header>
+
+<div class="bg-green text-white p-4 flex flex-col gap-3">
+    <h2 class="text-center text-3xl">
+        {{ title }}
+    </h2>
+    <ul class="flex items-center justify-center space-x-4">
+        <li class="inline-block">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="material-symbols-outlined text-sm">credit_card</span>
+                {{ total }}
+            </div>
+        </li>
+        <li class="inline-block">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="material-symbols-outlined text-sm">group</span>
+                {{ num_participants }}
+            </div>
+        </li>
+    </ul>
+    <div class="text-center">
+        <a href="{{ balances_url }}" class="uppercase inline-block bg-darkGreen px-3 py-2">Show balances</a>
+    </div>
+</div>
+
+<div class="bg-white">
+    <ul class="flex flex-col gap-4 py-4">
+        {% for expense in expenses %}
+        <li class="px-4">
+            <a class="block flex items-center gap-3" href="{{ expense.url }}">
+                <span class="material-symbols-outlined text-darkGrey">receipt</span>
+                <span class="grow flex flex-col {% if expense.deleted %} line-through opacity-30 {% endif %}">
+                    <span>{{ expense.description }}</span>
+                    <span class="text-sm text-darkGrey">{{ expense.amount }}</span>
+                </span>
+                {% call components::icon("chevron_right") %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock %}
