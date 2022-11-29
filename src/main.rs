@@ -97,16 +97,13 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                             };
 
                             rsx! {
-                                <li>
-                                    <a class={"block flex items-center gap-4"} href={expense.url}>
-                                        <span class={"text-darkGrey"}><Icon name={"receipt"} /></span>
-                                        <span class={classes}>
-                                            <span>{expense.description}</span>
-                                            <span class={"text-sm text-darkGrey"}>{expense.amount}</span>
-                                        </span>
-                                        <Icon name={"chevron_right"} />
-                                    </a>
-                                </li>
+                                <LinkListItem href={expense.url}>
+                                    <ListItemIcon name={"receipt"}/>
+                                    <span class={classes}>
+                                        <span>{expense.description}</span>
+                                        <span class={"text-sm text-darkGrey"}>{expense.amount}</span>
+                                    </span>
+                                </LinkListItem>
                             }
                         })
                         .collect::<Vec<_>>()}
@@ -160,8 +157,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
                 <h1 class={"text-lg col-span-10 col-start-2 font-header uppercase font-bold text-center"}>{"Balances"}</h1>
             </Header>
             <div class={"bg-white p-4"}>
-                <section class={"space-y-4"}>
-                    <h2 class={"text-darkGrey text-xs"}>{"The balances of all users in this Nobt."}</h2>
+                <Section title={"The balances of all users in this Nobt."}>
                     <List>
                         {balances
                             .into_iter()
@@ -173,21 +169,18 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
                                 };
 
                                 rsx! {
-                                    <li>
-                                        <a class={"block flex items-center gap-4"} href={balance.url}>
-                                            <Avatar initials={balance.initials} />
-                                            <span class={"grow flex flex-col"}>
-                                                <span>{balance.name}</span>
-                                                <span class={amount_classes}>{balance.amount}</span>
-                                            </span>
-                                            <Icon name={"chevron_right"} />
-                                        </a>
-                                    </li>
+                                    <LinkListItem href={balance.url}>
+                                        <Avatar initials={balance.initials} />
+                                        <span class={"grow flex flex-col"}>
+                                            <span>{balance.name}</span>
+                                            <span class={amount_classes}>{balance.amount}</span>
+                                        </span>
+                                    </LinkListItem>
                                 }
                             })
                             .collect::<Vec<_>>()}
                     </List>
-                </section>
+                </Section>
             </div>
         </App>
     })
@@ -226,62 +219,45 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                 <h1 class={"text-lg col-span-10 col-start-2 font-header uppercase font-bold text-center"}>{name}</h1>
             </Header>
             <div class={"bg-white p-4 space-y-4"}>
-                <section class={"space-y-4"}>
-                    <h2 class={"text-darkGrey text-xs"}>{"Debtee"}</h2>
+                <Section title={"Debtee"}>
                     <List>
-                        <li>
-                            <span class={"block flex items-center gap-4"}>
-                                <Avatar initials={debtee_initials} />
-                                <span class={"flex-grow"}>{debtee_name}{" paid this bill."}</span>
-                            </span>
-                        </li>
-                        <li>
-                            <span class={"block flex items-center gap-4"}>
-                                <span class={"text-darkGrey"}><Icon name={"access_time"}/></span>
-                                <span class={"flex-grow"}>{"Added on "}{added_on}{"."}</span>
-                            </span>
-                        </li>
-                        <li>
-                            <span class={"block flex items-center gap-4"}>
-                                <span class={"text-darkGrey"}><Icon name={"credit_card"}/></span>
-                                <span class={"flex-grow"}>{"The invoice total is "}{total}{"."}</span>
-                            </span>
-                        </li>
+                        <ListItem>
+                            <Avatar initials={debtee_initials} />
+                            {format!("{debtee_name} paid this bill.")}
+                        </ListItem>
+                        <ListItem>
+                            <ListItemIcon name={"access_time"}/>
+                            {format!("Added on {added_on}.")}
+                        </ListItem>
+                        <ListItem>
+                            <ListItemIcon name={"credit_card"}/>
+                            {format!("The invoice total is {total}.")}
+                        </ListItem>
                     </List>
-                </section>
-                <section class={"space-y-4"}>
-                    <h2 class={"text-darkGrey text-xs"}>{"Debtors"}</h2>
+                </Section>
+                <Section title={"Debtors"}>
                     <List>
                         {debtors
                             .into_iter()
-                            .map(|debtor| {
-                                rsx! {
-                                    <li>
-                                        <span class={"block flex items-center gap-4"}>
-                                            <Avatar initials={debtor.initials} />
-                                            <span class={"flex-grow"}>{debtor.name}</span>
-                                            <span class={"text-red"}>{debtor.amount_owed}</span>
-                                        </span>
-                                    </li>
-                                }
+                            .map(|debtor| rsx! {
+                                <ListItem>
+                                    <Avatar initials={debtor.initials} />
+                                    <span class={"flex-grow"}>{debtor.name}</span>
+                                    <span class={"text-red"}>{debtor.amount_owed}</span>
+                                </ListItem>
                             })
                             .collect::<Vec<_>>()}
                     </List>
-                </section>
+                </Section>
                 {(!deleted).then(|| rsx! {
-                   <section class={"space-y-4"}>
-                        <h2 class={"text-darkGrey text-xs"}>{"Actions"}</h2>
+                   <Section title={"Actions"}>
                         <List>
-                            <li>
-                                <form action={delete_url} method={"post"} hx-confirm={"Deleting a bill is permanent. Proceed?"}>
-                                    <button type={"submit"} class={"block flex items-center gap-4 w-full"}>
-                                        <span class={"text-darkGrey"}><Icon name={"delete"}/></span>
-                                        <span>{"Delete this bill"}</span>
-                                    </button>
-                                </form>
-                            </li>
+                            <FormListItem href={delete_url} confirm={"Deleting a bill is permanent. Proceed?"}>
+                                <ListItemIcon name={"delete"}/>
+                                {"Delete this bill"}
+                            </FormListItem>
                         </List>
-                    </section>
+                    </Section>
                 })}
             </div>
         </App>
@@ -370,9 +346,22 @@ where
 }
 
 #[component]
+fn Section<'a, C>(title: &'a str, children: C)
+where
+    C: Render,
+{
+    rsx! {
+        <section class={"space-y-4"}>
+            <h2 class={"text-darkGrey text-xs"}>{title}</h2>
+            {children}
+        </section>
+    }
+}
+
+#[component]
 fn List<C>(children: C)
 where
-    C: Render
+    C: Render,
 {
     rsx! {
         <ul class={"flex flex-col gap-4"}>
@@ -382,9 +371,59 @@ where
 }
 
 #[component]
+fn ListItem<C>(children: C)
+where
+    C: Render,
+{
+    rsx! {
+        <li class={"block flex items-center gap-4"}>
+            {children}
+        </li>
+    }
+}
+
+#[component]
+fn LinkListItem<C>(href: String, children: C)
+where
+    C: Render,
+{
+    rsx! {
+        <li>
+            <a class={"block flex items-center gap-4"} href={href}>
+                {children}
+                <Icon name={"chevron_right"} />
+            </a>
+        </li>
+    }
+}
+
+#[component]
+fn FormListItem<C>(href: String, confirm: &'static str, children: C)
+where
+    C: Render,
+{
+    rsx! {
+        <li>
+            <form action={href} method={"post"} hx-confirm={confirm}>
+                <button type={"submit"} class={"block flex items-center gap-4 w-full"}>
+                    {children}
+                </button>
+            </form>
+        </li>
+    }
+}
+
+#[component]
 fn Icon<'a>(name: &'a str) {
     rsx! {
         <span class={"material-symbols-outlined"}>{name}</span>
+    }
+}
+
+#[component]
+fn ListItemIcon<'a>(name: &'a str) {
+    rsx! {
+        <span class={"material-symbols-outlined text-darkGrey"}>{name}</span>
     }
 }
 
