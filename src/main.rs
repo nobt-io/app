@@ -85,31 +85,33 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                     <a href={balances_url} class={"uppercase inline-block bg-darkGreen px-3 py-2"}>{"Show balances"}</a>
                 </div>
             </div>
-            <ul class={"bg-white p-4 flex flex-col gap-4"}>
-                {expenses
-                    .into_iter()
-                    .map(|expense| {
-                        let classes = if expense.deleted {
-                            "grow flex flex-col line-through opacity-30"
-                        } else {
-                            "grow flex flex-col"
-                        };
+            <div class={"bg-white p-4"}>
+                <List>
+                    {expenses
+                        .into_iter()
+                        .map(|expense| {
+                            let classes = if expense.deleted {
+                                "grow flex flex-col line-through opacity-30"
+                            } else {
+                                "grow flex flex-col"
+                            };
 
-                        rsx! {
-                            <li>
-                                <a class={"block flex items-center gap-4"} href={expense.url}>
-                                    <span class={"text-darkGrey"}><Icon name={"receipt"} /></span>
-                                    <span class={classes}>
-                                        <span>{expense.description}</span>
-                                        <span class={"text-sm text-darkGrey"}>{expense.amount}</span>
-                                    </span>
-                                    <Icon name={"chevron_right"} />
-                                </a>
-                            </li>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
-            </ul>
+                            rsx! {
+                                <li>
+                                    <a class={"block flex items-center gap-4"} href={expense.url}>
+                                        <span class={"text-darkGrey"}><Icon name={"receipt"} /></span>
+                                        <span class={classes}>
+                                            <span>{expense.description}</span>
+                                            <span class={"text-sm text-darkGrey"}>{expense.amount}</span>
+                                        </span>
+                                        <Icon name={"chevron_right"} />
+                                    </a>
+                                </li>
+                            }
+                        })
+                        .collect::<Vec<_>>()}
+                </List>
+            </div>
         </App>
     })
 }
@@ -160,7 +162,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
             <div class={"bg-white p-4"}>
                 <section class={"space-y-4"}>
                     <h2 class={"text-darkGrey text-xs"}>{"The balances of all users in this Nobt."}</h2>
-                    <ul class={"flex flex-col gap-4"}>
+                    <List>
                         {balances
                             .into_iter()
                             .map(|balance| {
@@ -184,7 +186,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
                                 }
                             })
                             .collect::<Vec<_>>()}
-                    </ul>
+                    </List>
                 </section>
             </div>
         </App>
@@ -226,7 +228,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
             <div class={"bg-white p-4 space-y-4"}>
                 <section class={"space-y-4"}>
                     <h2 class={"text-darkGrey text-xs"}>{"Debtee"}</h2>
-                    <ul class={"flex flex-col gap-4"}>
+                    <List>
                         <li>
                             <span class={"block flex items-center gap-4"}>
                                 <Avatar initials={debtee_initials} />
@@ -245,11 +247,11 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                                 <span class={"flex-grow"}>{"The invoice total is "}{total}{"."}</span>
                             </span>
                         </li>
-                    </ul>
+                    </List>
                 </section>
                 <section class={"space-y-4"}>
                     <h2 class={"text-darkGrey text-xs"}>{"Debtors"}</h2>
-                    <ul class={"flex flex-col gap-4"}>
+                    <List>
                         {debtors
                             .into_iter()
                             .map(|debtor| {
@@ -264,12 +266,12 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                                 }
                             })
                             .collect::<Vec<_>>()}
-                    </ul>
+                    </List>
                 </section>
                 {(!deleted).then(|| rsx! {
                    <section class={"space-y-4"}>
                         <h2 class={"text-darkGrey text-xs"}>{"Actions"}</h2>
-                        <ul>
+                        <List>
                             <li>
                                 <form action={delete_url} method={"post"} hx-confirm={"Deleting a bill is permanent. Proceed?"}>
                                     <button type={"submit"} class={"block flex items-center gap-4 w-full"}>
@@ -278,7 +280,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                                     </button>
                                 </form>
                             </li>
-                        </ul>
+                        </List>
                     </section>
                 })}
             </div>
@@ -364,6 +366,18 @@ where
                 </div>
             </body>
         </>
+    }
+}
+
+#[component]
+fn List<C>(children: C)
+where
+    C: Render
+{
+    rsx! {
+        <ul class={"flex flex-col gap-4"}>
+            {children}
+        </ul>
     }
 }
 
