@@ -34,24 +34,25 @@ async fn main() -> Result<()> {
 
 async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
     let title = "Swedish Shenanigans";
-    let total = format!("EUR 1,521.00");
+    let total = 1521.00;
+    let currency = "EUR".to_owned();
     let num_participants = 4;
     let expenses = vec![
         ExpenseItem {
             description: "Thomas paid 'Flughafen Essen'".to_owned(),
-            amount: format!("EUR 39.00"),
+            amount: 39.00,
             url: format!("/{nobt_id}/14"),
             deleted: false,
         },
         ExpenseItem {
             description: "Thomas paid 'Benni Gutschein'".to_owned(),
-            amount: format!("EUR 150.00"),
+            amount: 150.00,
             url: format!("/{nobt_id}/13"),
             deleted: true,
         },
         ExpenseItem {
             description: "Prada paid 'Taxi zum Club'".to_owned(),
-            amount: format!("EUR 33.00"),
+            amount: 33.00,
             url: format!("/{nobt_id}/12"),
             deleted: false,
         },
@@ -63,7 +64,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
             <Header>
                 <h1 class={"text-xl"}>{"nobt.io"}</h1>
             </Header>
-            <div class={"bg-green text-white p-4 flex flex-col gap-4"}>
+            <div class={"bg-turquoise text-white p-4 flex flex-col gap-4"}>
                 <h2 class={"text-center text-3xl"}>
                     {title}
                 </h2>
@@ -71,7 +72,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                     <li class={"inline-block"}>
                         <div class={"flex items-center gap-2 text-sm"}>
                             <Icon name={"credit_card"} />
-                            {total}
+                            <Amount currency={&currency} value={total} classes={""}/>
                         </div>
                     </li>
                     <li class={"inline-block"}>
@@ -101,7 +102,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                                     <ListItemIcon name={"receipt"}/>
                                     <span class={classes}>
                                         <span>{expense.description}</span>
-                                        <span class={"text-sm text-darkGrey"}>{expense.amount}</span>
+                                        <Amount currency={&currency} value={expense.amount} classes={"text-darkGrey"}/>
                                     </span>
                                 </LinkListItem>
                             }
@@ -115,36 +116,33 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
 
 async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
     let title = "Swedish Shenanigans";
+    let currency = "EUR".to_owned();
     let nobt_url = format!("/{nobt_id}");
 
     let balances = vec![
         BalanceItem {
             initials: "SI".to_string(),
             name: "Simon".to_string(),
-            amount: "-EUR 99.66".to_string(),
+            amount: -99.66,
             url: format!("/{nobt_id}/balances/Simon"),
-            is_negative: true,
         },
         BalanceItem {
             initials: "TH".to_string(),
             name: "Thomas".to_string(),
-            amount: "EUR 390.34".to_string(),
+            amount: 390.34,
             url: format!("/{nobt_id}/balances/Thomas"),
-            is_negative: false,
         },
         BalanceItem {
             initials: "PR".to_string(),
             name: "Prada".to_string(),
-            amount: "-EUR 290.68".to_string(),
+            amount: -290.68,
             url: format!("/{nobt_id}/balances/Prada"),
-            is_negative: true,
         },
         BalanceItem {
             initials: "BE".to_string(),
             name: "Beji".to_string(),
-            amount: "EUR 0.00".to_string(),
+            amount: 0.00,
             url: format!("/{nobt_id}/balances/Benji"),
-            is_negative: false,
         },
     ];
 
@@ -161,22 +159,14 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
                     <List>
                         {balances
                             .into_iter()
-                            .map(|balance| {
-                                let amount_classes = if balance.is_negative {
-                                    "text-sm text-darkGrey text-red"
-                                } else {
-                                    "text-sm text-darkGrey text-green"
-                                };
-
-                                rsx! {
-                                    <LinkListItem href={balance.url}>
-                                        <Avatar initials={balance.initials} />
-                                        <span class={"grow flex flex-col"}>
-                                            <span>{balance.name}</span>
-                                            <span class={amount_classes}>{balance.amount}</span>
-                                        </span>
-                                    </LinkListItem>
-                                }
+                            .map(|balance| rsx! {
+                                <LinkListItem href={balance.url}>
+                                    <Avatar initials={balance.initials} />
+                                    <span class={"grow flex flex-col"}>
+                                        <span>{balance.name}</span>
+                                        <ThemedAmount currency={&currency} value={balance.amount} />
+                                    </span>
+                                </LinkListItem>
                             })
                             .collect::<Vec<_>>()}
                     </List>
@@ -194,6 +184,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
     let delete_url = format!("/{nobt_id}/{expense_id}/delete");
     let debtee_initials = "TH".to_owned();
     let debtee_name = "Thomas".to_owned();
+    let currency = "EUR".to_owned();
     let added_on = "28 August 2022".to_owned();
     let total = "EUR 39.00".to_owned();
 
@@ -201,12 +192,12 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
         DebtorItem {
             initials: "SI".to_string(),
             name: "Simon".to_string(),
-            amount_owed: "-EUR 19.50".to_string(),
+            amount_owed: -19.50,
         },
         DebtorItem {
             initials: "TH".to_string(),
             name: "Thomas".to_string(),
-            amount_owed: "-EUR 19.50".to_string(),
+            amount_owed: -19.50,
         },
     ];
 
@@ -243,7 +234,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                                 <ListItem>
                                     <Avatar initials={debtor.initials} />
                                     <span class={"flex-grow"}>{debtor.name}</span>
-                                    <span class={"text-red"}>{debtor.amount_owed}</span>
+                                    <ThemedAmount currency={&currency} value={debtor.amount_owed} />
                                 </ListItem>
                             })
                             .collect::<Vec<_>>()}
@@ -287,7 +278,7 @@ async fn styles() -> impl IntoResponse {
 
 struct ExpenseItem {
     description: String,
-    amount: String,
+    amount: f64,
     url: String,
     deleted: bool,
 }
@@ -303,15 +294,14 @@ fn html_200(body: String) -> Response<String> {
 struct DebtorItem {
     initials: String,
     name: String,
-    amount_owed: String,
+    amount_owed: f64,
 }
 
 struct BalanceItem {
     initials: String,
     name: String,
-    amount: String,
+    amount: f64,
     url: String,
-    is_negative: bool,
 }
 
 #[component]
@@ -420,6 +410,40 @@ fn Icon<'a>(name: &'a str) {
     }
 }
 
+/// Renders an amount in a given currency.
+///
+/// Negative amounts will appear red.
+#[component]
+fn ThemedAmount<'a>(currency: &'a str, value: f64) {
+    if value == 0.0 {
+        rsx! { <Amount currency={currency} value={value} classes={""}/> }
+    } else if value < 0.0 {
+        rsx! { <Amount currency={currency} value={value} classes={"text-red"}/> }
+    } else {
+        rsx! { <Amount currency={currency} value={value} classes={"text-green"}/> }
+    }
+}
+
+/// Renders an amount in a given currency.
+///
+/// Negative amounts will appear red.
+#[component]
+fn Amount<'a>(currency: &'a str, value: f64, classes: &'static str) {
+    let formatted = if value == 0.0 {
+        format!("{currency} 0.00")
+    } else if value < 0.0 {
+        let value = value.abs();
+
+        format!("-{currency} {value:.2}")
+    } else {
+        format!("{currency} {value:.2}")
+    };
+
+    rsx! {
+        <span class={format!("text-sm {classes}")}>{formatted}</span>
+    }
+}
+
 #[component]
 fn ListItemIcon<'a>(name: &'a str) {
     rsx! {
@@ -430,7 +454,7 @@ fn ListItemIcon<'a>(name: &'a str) {
 #[component]
 fn Avatar(initials: String) {
     rsx! {
-        <div class={"flex items-center justify-center bg-green text-bold rounded-full h-6 w-6 text-xs text-white leading-normal"}>
+        <div class={"flex items-center justify-center bg-turquoise text-bold rounded-full h-6 w-6 text-xs text-white leading-normal"}>
             {initials}
         </div>
     }
