@@ -149,7 +149,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
         <App title={title}>
             <Header>
                 <LinkIcon href={&nobt_url} name={"chevron_left"} />
-                <h1 class={"text-lg col-span-10 col-start-2 font-header uppercase font-bold text-center"}>{"Balances"}</h1>
+                <HeaderTitle title={"Balances"} />
             </Header>
             <div class={"bg-white p-4"}>
                 <Section title={"The balances of all users in this Nobt."}>
@@ -199,7 +199,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
         <App title={title}>
             <Header>
                 <LinkIcon href={&nobt_url} name={"chevron_left"} />
-                <h1 class={"text-lg col-span-10 col-start-2 font-header uppercase font-bold text-center"}>{name}</h1>
+                <HeaderTitle title={name} />
             </Header>
             <div class={"bg-white p-4 flex flex-col gap-4"}>
                 <Section title={"Debtee"}>
@@ -471,6 +471,13 @@ where
         <header class={"bg-grey text-white px-4 h-16 grid grid-cols-12 items-center"}>
             {children}
         </header>
+    }
+}
+
+#[component]
+fn HeaderTitle<'a>(title: &'a str) {
+    rsx! {
+        <h1 class={"text-lg col-span-10 col-start-2 uppercase font-bold text-center"}>{title}</h1>
     }
 }
 
