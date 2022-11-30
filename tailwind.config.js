@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  mode: 'jit',
   content: [
     "src/*.rs"
   ],
@@ -13,11 +14,16 @@ module.exports = {
         darkGrey: '#757575',
         hover: '#eeeeee',
         red: '#ff0000',
-        green: 'rgb(0, 128, 0)'
+        green: 'rgb(0, 128, 0)',
+        black26: 'rgba(0, 0, 0, 0.26)',
+        black12: 'rgba(0, 0, 0, 0.12)'
       },
       fontFamily: {
         body: ['"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"],
         header: ["Comfortaa"]
+      },
+      scale: {
+        '200': '1.75'
       }
     }
   }

@@ -114,6 +114,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                         .collect::<Vec<_>>()}
                 </List>
             </div>
+            <FAB nobt_id={&nobt_id}/>
         </App>
     })
 }
@@ -556,6 +557,68 @@ where
 fn HeaderTitle<'a>(title: &'a str) {
     rsx! {
         <h1 class={"text-lg col-span-10 col-start-2 uppercase font-bold text-center"}>{title}</h1>
+    }
+}
+
+#[component]
+fn FAB<'a>(nobt_id: &'a str) {
+    rsx! {
+        <div class={"fixed bottom-6 right-6 transform-gpu space-y-4 text-right"}>
+            <input id={"fab-toggle"} type={"checkbox"} class={"hidden peer"}/>
+            <FABLink href={format!("/{nobt_id}/payment")} icon={"credit_card"} text={"Pay someone"} disabled={true} index={1}/>
+            <FABLink href={format!("/{nobt_id}/bill")} icon={"receipt"} text={"Add a bill"} disabled={false} index={0}/>
+            <label for={"fab-toggle"} class={"relative z-20 inline-block peer-checked:rotate-[225deg] duration-300 transition-transform cursor-pointer"}>
+                <FABIcon name={"add"} styles={"bg-turquoise text-white"}/>
+            </label>
+        </div>
+    }
+}
+
+#[component]
+fn FABIcon<'a>(name: &'a str, styles: &'a str) {
+    rsx! {
+        <span class={format!("{styles} h-14 w-14 rounded-full flex items-center justify-center material-symbols-outlined shadow-[0_0_8px_rgba(0,0,0,0.28)]")}>
+            {name}
+        </span>
+    }
+}
+
+#[component]
+fn FABLink<'a>(icon: &'a str, text: &'a str, href: String, index: u32, disabled: bool) {
+    let translate_y = match index {
+        0 => "translate-y-16",
+        1 => "translate-y-32",
+        2 => "translate-y-48",
+        3 => "translate-y-64",
+        4 => "translate-y-80",
+        5 => "translate-y-96",
+        _ => unimplemented!(),
+    };
+
+    let cursor = if disabled { "cursor-not-allowed" } else { "" };
+
+    let link_styles = format!("relative z-10 block flex flex-row-reverse items-center gap-4 {translate_y} collapse opacity-0 peer-checked:visible peer-checked:translate-y-0 peer-checked:opacity-100 duration-300 transition-all {cursor}");
+
+    let text_styles = if disabled {
+        "bg-black12 text-black26"
+    } else {
+        "bg-turquoise text-white"
+    };
+
+    if disabled {
+        rsx! {
+            <span class={link_styles}>
+                <FABIcon name={icon} styles={text_styles} />
+                <span class={format!("{text_styles} px-2 py-1 rounded")}>{text}</span>
+            </span>
+        }
+    } else {
+        rsx! {
+            <a href={href} class={link_styles}>
+                <FABIcon name={icon} styles={text_styles} />
+                <span class={format!("{text_styles} px-2 py-1 rounded")}>{text}</span>
+            </a>
+        }
     }
 }
 
