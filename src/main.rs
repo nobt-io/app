@@ -408,7 +408,7 @@ fn Icon<'a>(name: &'a str) {
 #[component]
 fn ThemedAmount<'a>(currency: &'a str, value: f64) {
     if value == 0.0 {
-        rsx! { <Amount currency={currency} value={value} classes={""}/> }
+        rsx! { <Amount currency={currency} value={value} classes={"text-darkGrey"}/> }
     } else if value < 0.0 {
         rsx! { <Amount currency={currency} value={value} classes={"text-red"}/> }
     } else {
