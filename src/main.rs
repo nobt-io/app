@@ -7,6 +7,8 @@ use axum::Router;
 use render::html::HTML5Doctype;
 use render::*;
 use std::borrow::Cow;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 
 const STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
@@ -446,9 +448,10 @@ fn ListItemIcon<'a>(name: &'a str) {
 #[component]
 fn Avatar<'a>(name: &'a str) {
     let initials = make_initials(&name);
+    let bg_color = pick_bg_color(name);
 
     rsx! {
-        <div class={"flex items-center justify-center bg-turquoise text-bold rounded-full h-6 w-6 text-xs text-white leading-normal uppercase"}>
+        <div class={format!("flex items-center justify-center {bg_color} text-bold rounded-full h-6 w-6 text-xs text-white leading-normal uppercase")}>
             {initials}
         </div>
     }
@@ -464,6 +467,36 @@ where
             {children}
         </header>
     }
+}
+
+/// Picks an avatar color based on the name.
+///
+/// This function uses hashing and is thus susceptible to collisions if a nobt contains many names.
+fn pick_bg_color(name: &str) -> &'static str {
+    let colors = [
+        "bg-[#929093]",
+        "bg-[#EBDD94]",
+        "bg-[#DA8D93]",
+        "bg-[#BA99B8]",
+        "bg-[#D7B8A3]",
+        "bg-[#CD9775]",
+        "bg-[#DB8F5B]",
+        "bg-[#9E5C5D]",
+        "bg-[#CCD0D1]",
+        "bg-[#A7CCDE]",
+        "bg-[#87A9C5]",
+        "bg-[#255993]",
+        "bg-[#89BFAF]",
+        "bg-[#2EA1B4]",
+        "bg-[#8A8A4C]",
+        "bg-[#587942]",
+    ];
+
+    let mut hasher = DefaultHasher::new();
+    name.hash(&mut hasher);
+    let index = hasher.finish() as usize;
+
+    colors[index % colors.len()]
 }
 
 fn make_initials(name: &str) -> Cow<'_, str> {
