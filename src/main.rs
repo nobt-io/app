@@ -6,6 +6,7 @@ use axum::routing::post;
 use axum::Router;
 use render::html::HTML5Doctype;
 use render::*;
+use std::borrow::Cow;
 use std::net::SocketAddr;
 
 const STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
@@ -89,7 +90,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
             <div class={"bg-white p-4"}>
                 <List>
                     {expenses
-                        .into_iter()
+                        .iter()
                         .map(|expense| {
                             let classes = if expense.deleted {
                                 "grow flex flex-col line-through opacity-30"
@@ -98,10 +99,10 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                             };
 
                             rsx! {
-                                <LinkListItem href={expense.url}>
+                                <LinkListItem href={&expense.url}>
                                     <ListItemIcon name={"receipt"}/>
                                     <span class={classes}>
-                                        <span>{expense.description}</span>
+                                        <span>{expense.description.as_str()}</span>
                                         <Amount currency={&currency} value={expense.amount} classes={"text-darkGrey"}/>
                                     </span>
                                 </LinkListItem>
@@ -121,25 +122,21 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
 
     let balances = vec![
         BalanceItem {
-            initials: "SI".to_string(),
             name: "Simon".to_string(),
             amount: -99.66,
             url: format!("/{nobt_id}/balances/Simon"),
         },
         BalanceItem {
-            initials: "TH".to_string(),
             name: "Thomas".to_string(),
             amount: 390.34,
             url: format!("/{nobt_id}/balances/Thomas"),
         },
         BalanceItem {
-            initials: "PR".to_string(),
             name: "Prada".to_string(),
             amount: -290.68,
             url: format!("/{nobt_id}/balances/Prada"),
         },
         BalanceItem {
-            initials: "BE".to_string(),
             name: "Beji".to_string(),
             amount: 0.00,
             url: format!("/{nobt_id}/balances/Benji"),
@@ -158,12 +155,12 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
                 <Section title={"The balances of all users in this Nobt."}>
                     <List>
                         {balances
-                            .into_iter()
+                            .iter()
                             .map(|balance| rsx! {
-                                <LinkListItem href={balance.url}>
-                                    <Avatar initials={balance.initials} />
+                                <LinkListItem href={&balance.url}>
+                                    <Avatar name={&balance.name} />
                                     <span class={"grow flex flex-col"}>
-                                        <span>{balance.name}</span>
+                                        <span>{balance.name.as_str()}</span>
                                         <ThemedAmount currency={&currency} value={balance.amount} />
                                     </span>
                                 </LinkListItem>
@@ -182,7 +179,6 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
     let nobt_url = format!("/{nobt_id}");
     let deleted = false;
     let delete_url = format!("/{nobt_id}/{expense_id}/delete");
-    let debtee_initials = "TH".to_owned();
     let debtee_name = "Thomas".to_owned();
     let currency = "EUR".to_owned();
     let added_on = "28 August 2022".to_owned();
@@ -190,12 +186,10 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
 
     let debtors = vec![
         DebtorItem {
-            initials: "SI".to_string(),
             name: "Simon".to_string(),
             amount_owed: -19.50,
         },
         DebtorItem {
-            initials: "TH".to_string(),
             name: "Thomas".to_string(),
             amount_owed: -19.50,
         },
@@ -213,7 +207,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                 <Section title={"Debtee"}>
                     <List>
                         <ListItem>
-                            <Avatar initials={debtee_initials} />
+                            <Avatar name={&debtee_name} />
                             {format!("{debtee_name} paid this bill.")}
                         </ListItem>
                         <ListItem>
@@ -229,11 +223,11 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                 <Section title={"Debtors"}>
                     <List>
                         {debtors
-                            .into_iter()
+                            .iter()
                             .map(|debtor| rsx! {
                                 <ListItem>
-                                    <Avatar initials={debtor.initials} />
-                                    <span class={"flex-grow"}>{debtor.name}</span>
+                                    <Avatar name={&debtor.name} />
+                                    <span class={"flex-grow"}>{debtor.name.as_str()}</span>
                                     <ThemedAmount currency={&currency} value={debtor.amount_owed} />
                                 </ListItem>
                             })
@@ -292,13 +286,11 @@ fn html_200(body: String) -> Response<String> {
 }
 
 struct DebtorItem {
-    initials: String,
     name: String,
     amount_owed: f64,
 }
 
 struct BalanceItem {
-    initials: String,
     name: String,
     amount: f64,
     url: String,
@@ -373,7 +365,7 @@ where
 }
 
 #[component]
-fn LinkListItem<C>(href: String, children: C)
+fn LinkListItem<'a, C>(href: &'a str, children: C)
 where
     C: Render,
 {
@@ -452,9 +444,11 @@ fn ListItemIcon<'a>(name: &'a str) {
 }
 
 #[component]
-fn Avatar(initials: String) {
+fn Avatar<'a>(name: &'a str) {
+    let initials = make_initials(&name);
+
     rsx! {
-        <div class={"flex items-center justify-center bg-turquoise text-bold rounded-full h-6 w-6 text-xs text-white leading-normal"}>
+        <div class={"flex items-center justify-center bg-turquoise text-bold rounded-full h-6 w-6 text-xs text-white leading-normal uppercase"}>
             {initials}
         </div>
     }
@@ -469,5 +463,43 @@ where
         <header class={"bg-grey text-white px-4 h-16 grid grid-cols-12 items-center"}>
             {children}
         </header>
+    }
+}
+
+fn make_initials(name: &str) -> Cow<'_, str> {
+    match name.split(' ').collect::<Vec<_>>().as_slice() {
+        [] => Cow::Borrowed(""), // TODO: Should never happen
+        [first] => match first.len() {
+            0 => unreachable!(),
+            1 => Cow::Borrowed(&name[..1]),
+            _ => Cow::Borrowed(&name[..2]),
+        },
+        [first, last] => Cow::Owned(format!("{}{}", &first[..1], &last[..1])),
+        [first, .., last] => Cow::Owned(format!("{}{}", &first[..1], &last[..1])),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn make_initials_only_firstname() {
+        assert_eq!(make_initials("Thomas"), "Th");
+    }
+
+    #[test]
+    fn make_initials_first_and_lastname() {
+        assert_eq!(make_initials("Foo Bar"), "FB");
+    }
+
+    #[test]
+    fn make_initials_single_letter_first_name() {
+        assert_eq!(make_initials("S"), "S");
+    }
+
+    #[test]
+    fn make_initials_middle_name() {
+        assert_eq!(make_initials("Bar Foo Baz"), "BB");
     }
 }
