@@ -25,6 +25,7 @@ async fn main() -> Result<()> {
         .route("/style.css", get(styles))
         .route("/:nobt_id", get(nobt))
         .route("/:nobt_id/balances", get(balances))
+        .route("/:nobt_id/balances/:name", get(individual_balance))
         .route("/:nobt_id/:expense_id", get(expense))
         .route("/:nobt_id/:expense_id/delete", post(delete_expense));
 
@@ -152,7 +153,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
                 <HeaderTitle title={"Balances"} />
             </Header>
             <div class={"bg-white p-4"}>
-                <Section title={"The balances of all users in this Nobt."}>
+                <Section title={"Balance overview"} subtitle={"The balances of all users in this Nobt."}>
                     <List>
                         {balances
                             .iter()
@@ -164,6 +165,69 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
                                         <ThemedAmount currency={&currency} value={balance.amount} />
                                     </span>
                                 </LinkListItem>
+                            })
+                            .collect::<Vec<_>>()}
+                    </List>
+                </Section>
+            </div>
+        </App>
+    })
+}
+
+async fn individual_balance(Path((nobt_id, name)): Path<(String, String)>) -> impl IntoResponse {
+    let title = "Swedish Shenanigans";
+    let currency = "EUR";
+    let back_url = format!("/{nobt_id}/balances");
+
+    let debts = vec![
+        DebtItem {
+            name: "Prada".to_string(),
+            amount: 290.68,
+        },
+        DebtItem {
+            name: "Simon".to_string(),
+            amount: 99.66,
+        },
+    ];
+    let debt_sum = debts.iter().map(|d| d.amount).sum();
+    let debts_subtitle = format!(
+        "{name} owes {} to {} person{}.",
+        format_amount(currency, debt_sum),
+        debts.len(),
+        if debts.len() > 1 { "s" } else { "" }
+    );
+
+    html_200(html! {
+        <App title={title}>
+            <Header>
+                <LinkIcon href={&back_url} name={"chevron_left"} />
+                <HeaderTitle title={&name} />
+            </Header>
+            <div class={"bg-white p-4 flex flex-col gap-4"}>
+                <Section title={"Summary"} subtitle={""}>
+                    <List>
+                        <ListItem>
+                            <ListItemIcon name={"info"}/>
+                            {format!("{name} paid 2 bills ({}).", format_amount(currency, 1705.0))}
+                        </ListItem>
+                        <ListItem>
+                            <ListItemIcon name={"info"}/>
+                            {format!("{name} participates in 13 of 14 bills.")}
+                        </ListItem>
+                    </List>
+                </Section>
+                <Section title={"Debts"} subtitle={&debts_subtitle}>
+                    <List>
+                        {debts
+                            .iter()
+                            .map(|debt| rsx! {
+                                <ListItem>
+                                    <Avatar name={&debt.name} />
+                                    <span class={"grow flex flex-col"}>
+                                        <span>{debt.name.as_str()}</span>
+                                        <ThemedAmount currency={&currency} value={debt.amount} />
+                                    </span>
+                                </ListItem>
                             })
                             .collect::<Vec<_>>()}
                     </List>
@@ -202,7 +266,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                 <HeaderTitle title={name} />
             </Header>
             <div class={"bg-white p-4 flex flex-col gap-4"}>
-                <Section title={"Debtee"}>
+                <Section title={"Debtee"} subtitle={""}>
                     <List>
                         <ListItem>
                             <Avatar name={&debtee_name} />
@@ -218,7 +282,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                         </ListItem>
                     </List>
                 </Section>
-                <Section title={"Debtors"}>
+                <Section title={"Debtors"} subtitle={""}>
                     <List>
                         {debtors
                             .iter()
@@ -233,7 +297,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                     </List>
                 </Section>
                 {(!deleted).then(|| rsx! {
-                   <Section title={"Actions"}>
+                   <Section title={"Actions"} subtitle={""}>
                         <List>
                             <FormListItem href={delete_url} confirm={"Deleting a bill is permanent. Proceed?"}>
                                 <ListItemIcon name={"delete"}/>
@@ -294,6 +358,11 @@ struct BalanceItem {
     url: String,
 }
 
+struct DebtItem {
+    name: String,
+    amount: f64,
+}
+
 #[component]
 fn App<'a, C>(title: &'a str, children: C)
 where
@@ -326,13 +395,18 @@ where
 }
 
 #[component]
-fn Section<'a, C>(title: &'a str, children: C)
+fn Section<'a, C>(title: &'a str, subtitle: &'a str, children: C)
 where
     C: Render,
 {
     rsx! {
         <section class={"flex flex-col gap-4"}>
-            <h2 class={"text-darkGrey text-xs"}>{title}</h2>
+            <div class={"flex flex-col gap-2"}>
+                <h2 class={"text-darkGrey text-2xl"}>{title}</h2>
+                {(!subtitle.is_empty()).then(|| rsx! {
+                    <h3 class={"text-darkGrey text-xs"}>{subtitle}</h3>
+                })}
+            </div>
             {children}
         </section>
     }
@@ -428,7 +502,15 @@ fn ThemedAmount<'a>(currency: &'a str, value: f64) {
 /// Negative amounts will appear red.
 #[component]
 fn Amount<'a>(currency: &'a str, value: f64, classes: &'static str) {
-    let formatted = if value == 0.0 {
+    let formatted = format_amount(currency, value);
+
+    rsx! {
+        <span class={format!("text-sm {classes}")}>{formatted}</span>
+    }
+}
+
+fn format_amount(currency: &str, value: f64) -> String {
+    if value == 0.0 {
         format!("{currency} 0.00")
     } else if value < 0.0 {
         let value = value.abs();
@@ -436,10 +518,6 @@ fn Amount<'a>(currency: &'a str, value: f64, classes: &'static str) {
         format!("-{currency} {value:.2}")
     } else {
         format!("{currency} {value:.2}")
-    };
-
-    rsx! {
-        <span class={format!("text-sm {classes}")}>{formatted}</span>
     }
 }
 
