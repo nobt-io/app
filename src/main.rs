@@ -148,9 +148,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
     html_200(html! {
         <App title={title}>
             <Header>
-                <a href={nobt_url} class={"material-symbols-outlined"}> // TODO: Figure out how to use `Icon` abstraction here.
-                    {"chevron_left"}
-                </a>
+                <LinkIcon href={&nobt_url} name={"chevron_left"} />
                 <h1 class={"text-lg col-span-10 col-start-2 font-header uppercase font-bold text-center"}>{"Balances"}</h1>
             </Header>
             <div class={"bg-white p-4"}>
@@ -200,9 +198,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
     html_200(html! {
         <App title={title}>
             <Header>
-                <a href={nobt_url} class={"material-symbols-outlined"}> // TODO: Figure out how to use `Icon` abstraction here.
-                    {"chevron_left"}
-                </a>
+                <LinkIcon href={&nobt_url} name={"chevron_left"} />
                 <h1 class={"text-lg col-span-10 col-start-2 font-header uppercase font-bold text-center"}>{name}</h1>
             </Header>
             <div class={"bg-white p-4 space-y-4"}>
@@ -401,6 +397,15 @@ where
 fn Icon<'a>(name: &'a str) {
     rsx! {
         <span class={"material-symbols-outlined"}>{name}</span>
+    }
+}
+
+#[component]
+fn LinkIcon<'a>(href: &'a str, name: &'a str) {
+    rsx! {
+        <a href={href} class={"material-symbols-outlined"}>
+            {name}
+        </a>
     }
 }
 
