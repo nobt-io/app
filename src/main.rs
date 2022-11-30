@@ -201,7 +201,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                 <LinkIcon href={&nobt_url} name={"chevron_left"} />
                 <h1 class={"text-lg col-span-10 col-start-2 font-header uppercase font-bold text-center"}>{name}</h1>
             </Header>
-            <div class={"bg-white p-4 space-y-4"}>
+            <div class={"bg-white p-4 flex flex-col gap-4"}>
                 <Section title={"Debtee"}>
                     <List>
                         <ListItem>
@@ -331,7 +331,7 @@ where
     C: Render,
 {
     rsx! {
-        <section class={"space-y-4"}>
+        <section class={"flex flex-col gap-4"}>
             <h2 class={"text-darkGrey text-xs"}>{title}</h2>
             {children}
         </section>
