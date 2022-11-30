@@ -346,7 +346,7 @@ where
     C: Render,
 {
     rsx! {
-        <ul class={"flex flex-col gap-4"}>
+        <ul class={"flex flex-col"}>
             {children}
         </ul>
     }
@@ -358,7 +358,7 @@ where
     C: Render,
 {
     rsx! {
-        <li class={"block flex items-center gap-4"}>
+        <li class={"block flex items-center gap-4 p-2"}>
             {children}
         </li>
     }
@@ -371,7 +371,7 @@ where
 {
     rsx! {
         <li>
-            <a class={"block flex items-center gap-4"} href={href}>
+            <a class={"block flex items-center gap-4 hover:bg-hover p-2"} href={href}>
                 {children}
                 <Icon name={"chevron_right"} />
             </a>
@@ -387,7 +387,7 @@ where
     rsx! {
         <li>
             <form action={href} method={"post"} hx-confirm={confirm}>
-                <button type={"submit"} class={"block flex items-center gap-4 w-full"}>
+                <button type={"submit"} class={"block flex items-center gap-4 w-full hover:bg-hover p-2"}>
                     {children}
                 </button>
             </form>

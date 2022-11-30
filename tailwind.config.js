@@ -11,6 +11,7 @@ module.exports = {
         darkGreen: '#2d978d',
         lightGrey: '#e3e3e3',
         darkGrey: '#757575',
+        hover: '#eeeeee',
         red: '#ff0000',
         green: 'rgb(0, 128, 0)'
       },
