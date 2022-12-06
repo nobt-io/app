@@ -150,11 +150,6 @@ async fn new_bill(
         names.insert(new_debtee.to_owned());
     }
 
-    let select_debtee_link = format!(
-        "/{nobt_id}/bill/debtee?{}",
-        serde_urlencoded::to_string(&params).unwrap()
-    );
-
     Html(html! {
         <App title={title}>
             <Header>
@@ -177,7 +172,7 @@ async fn new_bill(
                 </section>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
-                    <button type={"submit"} formnovalidate={"true"} formmethod={"get"} formaction={select_debtee_link} class={"flex items-center hover:bg-hover cursor-pointer"}>
+                    <button type={"submit"} formnovalidate={"true"} formmethod={"get"} formaction={format!("/{nobt_id}/bill/debtee")} class={"flex items-center hover:bg-hover cursor-pointer"}>
                         <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
                             {"person"}
                             {match params.debtee.as_deref() {
@@ -246,7 +241,7 @@ async fn choose_bill_debtee(
     let currency = "EUR".to_owned();
     let back_link = format!(
         "/{nobt_id}/bill?{}",
-        serde_urlencoded::to_string(&params).unwrap()
+        serde_urlencoded::to_string(&params).unwrap() // TODO: Should this be a form too?
     );
     let mut names = HashSet::from(["Thomas", "Simon", "Prada", "Benji"]);
 
