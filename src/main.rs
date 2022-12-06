@@ -45,7 +45,7 @@ struct NewBillParameters {
     name: Option<String>,
     total: Option<f64>,
     debtee: Option<String>,
-    debtors: Option<Vec<String>>,
+    debtors: Option<HashSet<String>>,
 }
 
 async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
@@ -252,7 +252,7 @@ async fn choose_bill_debtee(
     let bill_name = params.name.as_deref();
     let selected_debtee = params.debtee.as_deref();
     let total = params.total.as_ref();
-    let debtors = params.debtors.as_deref();
+    let debtors = params.debtors.as_ref();
 
     Html(html! {
         <App title={title}>
@@ -303,7 +303,7 @@ fn ChooseDebteeForm<'a>(
     name: Option<&'a str>,
     total: Option<&'a f64>,
     debtee: &'a str,
-    debtors: Option<&'a [String]>,
+    debtors: Option<&'a HashSet<String>>,
     is_checked: bool,
 ) {
     rsx! {
