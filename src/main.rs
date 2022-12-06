@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use axum::extract::{Path, Query};
-use axum::response::{IntoResponse, Response};
+use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::routing::post;
 use axum::{Form, Router};
@@ -75,7 +75,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
     ];
     let balances_url = format!("/{nobt_id}/balances");
 
-    html_200(html! {
+    Html(html! {
         <App title={title}>
             <Header>
                 <h1 class={"text-xl"}>{"nobt.io"}</h1>
@@ -155,7 +155,7 @@ async fn new_bill(
         serde_urlencoded::to_string(&params).unwrap()
     );
 
-    html_200(html! {
+    Html(html! {
         <App title={title}>
             <Header>
                 <LinkIcon href={&nobt_url} name={"chevron_left"} />
@@ -259,7 +259,7 @@ async fn choose_bill_debtee(
     let total = params.total.as_ref();
     let debtors = params.debtors.as_deref();
 
-    html_200(html! {
+    Html(html! {
         <App title={title}>
             <Header>
                 <LinkIcon href={&back_link} name={"chevron_left"} />
@@ -395,7 +395,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
         },
     ];
 
-    html_200(html! {
+    Html(html! {
         <App title={title}>
             <Header>
                 <LinkIcon href={&nobt_url} name={"chevron_left"} />
@@ -446,7 +446,7 @@ async fn individual_balance(Path((nobt_id, name)): Path<(String, String)>) -> im
         if debts.len() > 1 { "s" } else { "" }
     );
 
-    html_200(html! {
+    Html(html! {
         <App title={title}>
             <Header>
                 <LinkIcon href={&back_url} name={"chevron_left"} />
@@ -508,7 +508,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
         },
     ];
 
-    html_200(html! {
+    Html(html! {
         <App title={title}>
             <Header>
                 <LinkIcon href={&nobt_url} name={"chevron_left"} />
@@ -586,14 +586,6 @@ struct ExpenseItem {
     amount: f64,
     url: String,
     deleted: bool,
-}
-
-fn html_200(body: String) -> Response<String> {
-    Response::builder()
-        .status(200)
-        .header("Content-Type", "text/html")
-        .body(body)
-        .unwrap()
 }
 
 struct DebtorItem {
