@@ -3,7 +3,8 @@ use axum::extract::{Path, Query};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::routing::post;
-use axum::{Form, Router};
+use axum::Router;
+use axum_extra::extract::Form;
 use render::html::HTML5Doctype;
 use render::*;
 use std::borrow::Cow;
@@ -150,6 +151,8 @@ async fn new_bill(
         names.insert(new_debtee.to_owned());
     }
 
+    let debtors = params.debtors.as_ref().unwrap_or_else(|| &names);
+
     Html(html! {
         <App title={title}>
             <Header>
@@ -201,11 +204,30 @@ async fn new_bill(
                 </section>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Who is involved?"}</h2>
-                    // <a href={select_debtee_link} class={"flex items-center hover:bg-hover cursor-pointer"}>
-                    //     <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"person"}</span>
-                    //     <span class={debtee_text_styles}>{debtee_text}</span>
-                    //     <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"edit"}</span>
-                    // </a>
+                    <button type={"submit"} formnovalidate={"true"} formmethod={"get"} formaction={format!("/{nobt_id}/bill/debtors")} class={"flex items-center hover:bg-hover cursor-pointer"}>
+                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
+                            {"group"}
+                        </span>
+                        {debtors
+                            .iter()
+                            .map(|d| rsx! {
+                                <input type={"hidden"} name={"debtors"} value={d}/>
+                            })
+                            .collect::<Vec<_>>()}
+                        <span class={match &debtors.len() {
+                            0 => "text-[grey] text-left flex-grow",
+                            _ => "text-black text-left flex-grow",
+                        }}>
+                            {match debtors.len() {
+                                0 => "Nobody is involved".to_owned(),
+                                1 => "1 person is involved".to_owned(),
+                                num => format!("{num} persons are involved."),
+                            }}
+                        </span>
+                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
+                            {"edit"}
+                        </span>
+                    </button>
                     <span class={"text-xs text-[grey]"}>{"Select who is involved in this bill."}</span>
                 </section>
                 <div>
