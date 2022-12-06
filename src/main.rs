@@ -249,15 +249,11 @@ async fn choose_bill_debtee(
         "/{nobt_id}/bill?{}",
         serde_urlencoded::to_string(&params).unwrap()
     );
-    let names = ["Thomas", "Simon", "Prada", "Benji"];
+    let mut names = HashSet::from(["Thomas", "Simon", "Prada", "Benji"]);
 
-    let new_debtee_entry = match params.debtee.as_deref() {
-        None => None,
-        Some(debtee) if names.contains(&debtee) => None,
-        Some(debtee) => {
-            Some(rsx! { <ChooseDebteeForm nobt_id={&nobt_id} name={debtee} is_checked={true} /> })
-        }
-    };
+    if let Some(debtee) = params.debtee.as_ref() {
+        names.insert(debtee);
+    }
 
     html_200(html! {
         <App title={title}>
@@ -279,8 +275,6 @@ async fn choose_bill_debtee(
                             }
                         })
                         .collect::<Vec<_>>()}
-
-                    {new_debtee_entry}
                 </section>
 
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
