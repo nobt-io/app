@@ -11,5 +11,8 @@ axum = "0.6.0"
 render = { git = "https://github.com/render-rs/render.rs" }
 anyhow = "1.0.66"
 serde = { version = "1", features = ["derive"] }
-serde_urlencoded = "0.7.1"
-axum-extra = { version = "0.4.1", features = ["form"] }
+axum-extra = { version = "0.4.1", features = ["form", "query"] }
+serde_html_form = "0.1.0"
+
+[patch.crates-io]
+"serde_html_form" = { git = "https://github.com/thomaseizinger/serde_html_form", branch = "main" }

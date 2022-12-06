@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
-use axum::extract::{Path, Query};
+use axum::extract::Path;
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
-use axum_extra::extract::Form;
+use axum_extra::extract::{Form, Query};
 use render::html::HTML5Doctype;
 use render::*;
 use std::borrow::Cow;
@@ -29,6 +29,7 @@ async fn main() -> Result<()> {
         .route("/:nobt_id/bill", get(new_bill))
         .route("/:nobt_id/bill", post(add_new_bill))
         .route("/:nobt_id/bill/debtee", get(choose_bill_debtee))
+        .route("/:nobt_id/bill/debtors", get(choose_bill_debtors))
         .route("/:nobt_id/balances", get(balances))
         .route("/:nobt_id/balances/:name", get(individual_balance))
         .route("/:nobt_id/:expense_id", get(expense))
@@ -263,12 +264,15 @@ async fn choose_bill_debtee(
     let currency = "EUR".to_owned();
     let back_link = format!(
         "/{nobt_id}/bill?{}",
-        serde_urlencoded::to_string(&params).unwrap() // TODO: Should this be a form too?
+        serde_html_form::to_string(&params).unwrap()
     );
     let mut names = HashSet::from(["Thomas", "Simon", "Prada", "Benji"]);
 
     if let Some(debtee) = params.debtee.as_ref() {
         names.insert(debtee);
+    }
+    if let Some(debtors) = params.debtors.as_ref() {
+        names.extend(debtors.iter().map(|s| s.as_str()));
     }
 
     let bill_name = params.name.as_deref();
@@ -281,6 +285,77 @@ async fn choose_bill_debtee(
             <Header>
                 <LinkIcon href={&back_link} name={"chevron_left"} />
                 <HeaderTitle title={"Select debtee"} />
+            </Header>
+            <div class={"bg-turquoise p-4 flex flex-col gap-4"}>
+                <section class={"flex flex-col bg-white p-2 gap-2"}>
+                    <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
+
+                    {names
+                        .iter()
+                        .map(|debtee| {
+                            let is_current_debtee = selected_debtee.map(|sd| &sd == debtee).unwrap_or(false);
+
+                            rsx! {
+                                <ChooseDebteeForm nobt_id={&nobt_id} name={bill_name} total={total} debtee={debtee} debtors={debtors} is_checked={is_current_debtee} />
+                            }
+                        })
+                        .collect::<Vec<_>>()}
+                </section>
+
+                <section class={"flex flex-col bg-white p-2 gap-2"}>
+                    <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
+
+                    <form action={format!("/{nobt_id}/bill")} class={"w-full flex items-center"}>
+                        {bill_name.map(|name| rsx! {
+                            <input type={"hidden"} name={"name"} value={name} />
+                        })}
+                        {total.map(|total| rsx! {
+                            <input type={"hidden"} name={"total"} value={total.to_string()} />
+                        })}
+                        <input class={"flex-grow p-2 truncate"} type={"text"} name={"debtee"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
+                        <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer"}>
+                            {"Add"}
+                        </button>
+                    </form>
+                </section>
+            </div>
+        </App>
+    })
+}
+
+// TODO:
+// - needs checkboxes (fake?)
+// - needs submit button
+// - needs add person button
+async fn choose_bill_debtors(
+    Path(nobt_id): Path<String>,
+    Query(params): Query<NewBillParameters>,
+) -> impl IntoResponse {
+    let title = "Swedish Shenanigans";
+    let currency = "EUR".to_owned();
+    let back_link = format!(
+        "/{nobt_id}/bill?{}",
+        serde_html_form::to_string(&params).unwrap()
+    );
+    let mut names = HashSet::from(["Thomas", "Simon", "Prada", "Benji"]);
+
+    if let Some(debtee) = params.debtee.as_ref() {
+        names.insert(debtee);
+    }
+    if let Some(debtors) = params.debtors.as_ref() {
+        names.extend(debtors.iter().map(|s| s.as_str()));
+    }
+
+    let bill_name = params.name.as_deref();
+    let selected_debtee = params.debtee.as_deref();
+    let total = params.total.as_ref();
+    let debtors = params.debtors.as_ref();
+
+    Html(html! {
+        <App title={title}>
+            <Header>
+                <LinkIcon href={&back_link} name={"chevron_left"} />
+                <HeaderTitle title={"Select debtors"} />
             </Header>
             <div class={"bg-turquoise p-4 flex flex-col gap-4"}>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>

@@ -17,7 +17,7 @@ dependencies = [
  "axum-extra",
  "render",
  "serde",
- "serde_urlencoded",
+ "serde_html_form",
  "tokio",
 ]
 
@@ -512,8 +512,7 @@ dependencies = [
 [[package]]
 name = "serde_html_form"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3312ac3bf56e70cb7082a85db89d127940607b6acf39bd537cc06c8212124927"
+source = "git+https://github.com/thomaseizinger/serde_html_form?branch=main#14eba888bba7581080382868e7d841f774a03189"
 dependencies = [
  "form_urlencoded",
  "indexmap",
