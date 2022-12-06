@@ -161,7 +161,7 @@ async fn new_bill(
                 <LinkIcon href={&nobt_url} name={"chevron_left"} />
                 <HeaderTitle title={"Add a bill"} />
             </Header>
-            <form method={"post"} action={""} class={"bg-turquoise p-4 flex flex-col gap-4"}>
+            <form class={"bg-turquoise p-4 flex flex-col gap-4"}>
                 <section class={"flex flex-col bg-white p-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"What did you buy?"}</h2>
                     <input required={"true"} class={"outline-none peer border-b py-2"} name={"name"} value={params.name.unwrap_or_default()} placeholder={"Trip Snacks, Train Tickets, Beer, ..."} />
@@ -171,14 +171,24 @@ async fn new_bill(
                     <h2 class={"text-black font-bold text-sm"}>{"How much did it cost?"}</h2>
                     <div class={"flex items-center"}>
                         <span class={"w-10 h-10 text-[grey] flex items-center justify-center text-xl"}>{"€"}</span>
-                        <input required={"true"} class={"outline-none peer border-b py-2 appearance-none w-full"} name={"total"} value={params.total.unwrap_or_default().to_string()} step={"0.01"} min={"0"} type={"number"} placeholder={"0.00"} /> // TODO: Don't set 0 by default
+                        <input required={"true"} class={"outline-none peer border-b py-2 appearance-none w-full"} name={"total"} value={params.total.map(|t| t.to_string()).unwrap_or_default()} step={"0.01"} min={"0"} type={"number"} placeholder={"0.00"} /> // TODO: Don't set 0 by default
                     </div>
                     <span class={"text-xs text-[grey]"}>{"Enter the total of this bill."}</span>
                 </section>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
-                    <a href={select_debtee_link} class={"flex items-center hover:bg-hover cursor-pointer"}>
-                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"person"}</span>
+                    <button type={"submit"} formnovalidate={"true"} formmethod={"get"} formaction={select_debtee_link} class={"flex items-center hover:bg-hover cursor-pointer"}>
+                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
+                            {"person"}
+                            {match params.debtee.as_deref() {
+                                Some(debtee) => rsx! {
+                                    <input class={"appearance-none"} required={"true"} type={"radio"} name={"debtee"} checked={"checked"} value={debtee} />
+                                },
+                                None => rsx! {
+                                    <input class={"appearance-none"} required={"true"} type={"radio"} name={"debtee"} />
+                                }
+                            }}
+                        </span>
                         <span class={match &params.debtee {
                             Some(_) => "text-black text-left flex-grow",
                             None => "text-[grey] text-left flex-grow",
@@ -188,22 +198,11 @@ async fn new_bill(
                                 None => "Select a Debtee".to_owned(),
                             }}
                         </span>
-                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"edit"}</span>
-                    </a>
+                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
+                            {"edit"}
+                        </span>
+                    </button>
                     <span class={"text-xs text-[grey]"}>{"Select the person who paid this bill."}</span>
-
-                    <select hidden={"hidden"} required={"true"}>
-                        {names
-                            .iter()
-                            .map(|n| {
-                                let is_selected = params.debtee.as_ref().map(|d| d == n).unwrap_or_default();
-
-                                rsx! {
-                                    <option value={n} selected={is_selected.to_string()} />
-                                }
-                            })
-                            .collect::<Vec<_>>()}
-                    </select>
                 </section>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Who is involved?"}</h2>
@@ -215,7 +214,7 @@ async fn new_bill(
                     <span class={"text-xs text-[grey]"}>{"Select who is involved in this bill."}</span>
                 </section>
                 <div>
-                    <button class={"flex items-center justify-center gap-2 text-white uppercase rounded shadow px-4 py-2 bg-darkGreen"} type={"submit"}>
+                    <button class={"flex items-center justify-center gap-2 text-white uppercase rounded shadow px-4 py-2 bg-darkGreen"} type={"submit"} formmethod={"post"}>
                         <span class={"material-symbols-outlined"}>{"check_circle"}</span>
                         {"Add bill"}
                     </button>
@@ -255,6 +254,11 @@ async fn choose_bill_debtee(
         names.insert(debtee);
     }
 
+    let bill_name = params.name.as_deref();
+    let selected_debtee = params.debtee.as_deref();
+    let total = params.total.as_ref();
+    let debtors = params.debtors.as_deref();
+
     html_200(html! {
         <App title={title}>
             <Header>
@@ -267,11 +271,11 @@ async fn choose_bill_debtee(
 
                     {names
                         .iter()
-                        .map(|name| {
-                            let is_current_debtee = params.debtee.as_ref().map(|d| &d == name).unwrap_or_else(|| false);
+                        .map(|debtee| {
+                            let is_current_debtee = selected_debtee.map(|sd| &sd == debtee).unwrap_or(false);
 
                             rsx! {
-                                <ChooseDebteeForm nobt_id={&nobt_id} name={name} is_checked={is_current_debtee} />
+                                <ChooseDebteeForm nobt_id={&nobt_id} name={bill_name} total={total} debtee={debtee} debtors={debtors} is_checked={is_current_debtee} />
                             }
                         })
                         .collect::<Vec<_>>()}
@@ -281,6 +285,12 @@ async fn choose_bill_debtee(
                     <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
 
                     <form action={format!("/{nobt_id}/bill")} class={"w-full flex items-center"}>
+                        {bill_name.map(|name| rsx! {
+                            <input type={"hidden"} name={"name"} value={name} />
+                        })}
+                        {total.map(|total| rsx! {
+                            <input type={"hidden"} name={"total"} value={total.to_string()} />
+                        })}
                         <input class={"flex-grow p-2 truncate"} type={"text"} name={"debtee"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
                         <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer"}>
                             {"Add"}
@@ -293,13 +303,26 @@ async fn choose_bill_debtee(
 }
 
 #[component]
-fn ChooseDebteeForm<'a>(nobt_id: &'a str, name: &'a str, is_checked: bool) {
+fn ChooseDebteeForm<'a>(
+    nobt_id: &'a str,
+    name: Option<&'a str>,
+    total: Option<&'a f64>,
+    debtee: &'a str,
+    debtors: Option<&'a [String]>,
+    is_checked: bool,
+) {
     rsx! {
         <form method={"get"} action={format!("/{nobt_id}/bill")} class={"w-full"}>
-            <input type={"hidden"} name={"debtee"} value={name} />
+            <input type={"hidden"} name={"debtee"} value={debtee} />
+            {name.map(|name| rsx! {
+                <input type={"hidden"} name={"name"} value={name} />
+            })}
+            {total.map(|total| rsx! {
+                <input type={"hidden"} name={"total"} value={total.to_string()} />
+            })}
             <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer w-full"}>
-                <Avatar name={name} />
-                <span class={"flex-grow text-left"}>{name}</span>
+                <Avatar name={debtee} />
+                <span class={"flex-grow text-left"}>{debtee}</span>
                 <span class={"flex items-center justify-center rounded-full border border-darkGrey w-3.5 h-3.5"}>
                     {is_checked.then(|| rsx! {
                         <span class={"block bg-turquoise rounded-full w-2 h-2"}></span>
@@ -607,7 +630,33 @@ where
                 <link href={"https://fonts.googleapis.com/css?family=Courgette|Comfortaa:700"} rel={"stylesheet"} />
                 <link href={"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0"} rel={"stylesheet"}/>
                 <link href={"/style.css"} rel={"stylesheet"}/>
+                // <script src={"https://unpkg.com/htmx.org@1.8.4/dist/htmx.js"} crossorigin={"anonymous"}>{""}</script>
                 <script src={"https://unpkg.com/htmx.org@1.8.4"} integrity={"sha384-wg5Y/JwF7VxGk4zLsJEcAojRtlVp1FKKdGy1qN+OMtdq72WRvX/EdRdqg/LOhYeV"} crossorigin={"anonymous"}>{""}</script>
+                // TODO: Wait for https://github.com/bigskysoftware/htmx/pull/1156 to be released or we fork it.
+                // <script>
+                //     {raw! {
+                //         r#"
+                //         htmx.on('htmx:configRequest', function (e) {
+                //           const element = e.detail.elt;
+                //           if (element && element.nodeName === 'FORM') {
+                //             let submitter = e.detail.triggeringEvent.submitter;
+                //             if (submitter) {
+                //              // Element also has "formAction" field, but if "formaction" attribute is not filled then it has a default value.
+                //              // So we specifically need to check for the existence of the attribute
+                //              const form_action = submitter.attributes['formaction'];
+                //               if (form_action && form_action.value) {
+                //                 e.detail.path = form_action;
+                //               }
+                //
+                //               const form_method = submitter.attributes['formmethod']
+                //               if (form_method && form_method.value) {
+                //                 e.detail.verb = form_method.value.toLowerCase();
+                //               }
+                //             }
+                //           }
+                //         });"#
+                //     }}
+                // </script>
             </head>
             <body hx-boost={"true"} class={"bg-lightGrey h-screen"}>
                 <div class={"sm:pt-10"}>
