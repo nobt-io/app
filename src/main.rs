@@ -1,13 +1,14 @@
 use anyhow::{Context, Result};
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::routing::post;
-use axum::Router;
+use axum::{Form, Router};
 use render::html::HTML5Doctype;
 use render::*;
 use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 
@@ -24,6 +25,9 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/style.css", get(styles))
         .route("/:nobt_id", get(nobt))
+        .route("/:nobt_id/bill", get(new_bill))
+        .route("/:nobt_id/bill", post(add_new_bill))
+        .route("/:nobt_id/bill/debtee", get(choose_bill_debtee))
         .route("/:nobt_id/balances", get(balances))
         .route("/:nobt_id/balances/:name", get(individual_balance))
         .route("/:nobt_id/:expense_id", get(expense))
@@ -34,6 +38,14 @@ async fn main() -> Result<()> {
         .await?;
 
     Ok(())
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+struct NewBillParameters {
+    name: Option<String>,
+    total: Option<f64>,
+    debtee: Option<String>,
+    debtors: Option<Vec<String>>,
 }
 
 async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
@@ -117,6 +129,225 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
             <FAB nobt_id={&nobt_id}/>
         </App>
     })
+}
+
+async fn new_bill(
+    Path(nobt_id): Path<String>,
+    Query(params): Query<NewBillParameters>,
+) -> impl IntoResponse {
+    let title = "Swedish Shenanigans";
+    let currency = "EUR".to_owned();
+    let nobt_url = format!("/{nobt_id}");
+    let mut names = HashSet::from([
+        "Thomas".to_owned(),
+        "Simon".to_owned(),
+        "Prada".to_owned(),
+        "Benji".to_owned(),
+    ]);
+
+    // TODO: Merge into component?
+    let debtee_text = match &params.debtee {
+        Some(debtee) => format!("{debtee} paid the bill."),
+        None => "Select a Debtee".to_owned(),
+    };
+    let debtee_text_styles = match &params.debtee {
+        Some(_) => "text-black flex-grow",
+        None => "text-[grey] flex-grow",
+    };
+    if let Some(new_debtee) = &params.debtee {
+        names.insert(new_debtee.to_owned());
+    }
+
+    let select_debtee_link = format!(
+        "/{nobt_id}/bill/debtee?{}",
+        serde_urlencoded::to_string(&params).unwrap()
+    );
+
+    html_200(html! {
+        <App title={title}>
+            <Header>
+                <LinkIcon href={&nobt_url} name={"chevron_left"} />
+                <HeaderTitle title={"Add a bill"} />
+            </Header>
+            <form method={"post"} action={""} class={"bg-turquoise p-4 flex flex-col gap-4"}>
+                <section class={"flex flex-col bg-white p-2"}>
+                    <h2 class={"text-black font-bold text-sm"}>{"What did you buy?"}</h2>
+                    <input required={"true"} class={"outline-none peer border-b py-2"} name={"name"} value={params.name.unwrap_or_default()} placeholder={"Trip Snacks, Train Tickets, Beer, ..."} />
+                    <span class={"text-xs text-[grey]"}>{"Enter a descriptive name for what was paid for."}</span>
+                </section>
+                <section class={"flex flex-col bg-white p-2"}>
+                    <h2 class={"text-black font-bold text-sm"}>{"How much did it cost?"}</h2>
+                    <div class={"flex items-center"}>
+                        <span class={"w-10 h-10 text-[grey] flex items-center justify-center text-xl"}>{"€"}</span>
+                        <input required={"true"} class={"outline-none peer border-b py-2 appearance-none w-full"} name={"total"} value={params.total.unwrap_or_default().to_string()} step={"0.01"} min={"0"} type={"number"} placeholder={"0.00"} /> // TODO: Don't set 0 by default
+                    </div>
+                    <span class={"text-xs text-[grey]"}>{"Enter the total of this bill."}</span>
+                </section>
+                <section class={"flex flex-col bg-white p-2 gap-2"}>
+                    <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
+                    <a href={select_debtee_link} class={"flex items-center hover:bg-hover cursor-pointer"}>
+                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"person"}</span>
+                        <span class={debtee_text_styles}>{debtee_text.as_str()}</span>
+                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"edit"}</span>
+                    </a>
+                    <span class={"text-xs text-[grey]"}>{"Select the person who paid this bill."}</span>
+
+                    <select hidden={"hidden"} required={"true"}>
+                        {names
+                            .iter()
+                            .map(|n| {
+                                let is_selected = params.debtee.as_ref().map(|d| d == n).unwrap_or_default();
+
+                                rsx! {
+                                    <option value={n} selected={is_selected.to_string()} />
+                                }
+                            })
+                            .collect::<Vec<_>>()}
+                    </select>
+                </section>
+                <section class={"flex flex-col bg-white p-2 gap-2"}>
+                    <h2 class={"text-black font-bold text-sm"}>{"Who is involved?"}</h2>
+                    // <a href={select_debtee_link} class={"flex items-center hover:bg-hover cursor-pointer"}>
+                    //     <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"person"}</span>
+                    //     <span class={debtee_text_styles}>{debtee_text}</span>
+                    //     <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"edit"}</span>
+                    // </a>
+                    <span class={"text-xs text-[grey]"}>{"Select who is involved in this bill."}</span>
+                </section>
+                <div>
+                    <button class={"flex items-center justify-center gap-2 text-white uppercase rounded shadow px-4 py-2 bg-darkGreen"} type={"submit"}>
+                        <span class={"material-symbols-outlined"}>{"check_circle"}</span>
+                        {"Add bill"}
+                    </button>
+                </div>
+            </form>
+        </App>
+    })
+}
+
+async fn add_new_bill(Form(new_bill): Form<NewBillForm>) -> impl IntoResponse {
+    println!("{new_bill:?}");
+
+    ""
+}
+
+#[derive(serde::Deserialize, Debug)]
+struct NewBillForm {
+    name: String,
+    total: f64,
+    debtee: String,
+    debtors: Vec<String>,
+}
+
+async fn choose_bill_debtee(
+    Path(nobt_id): Path<String>,
+    Query(params): Query<NewBillParameters>,
+) -> impl IntoResponse {
+    let title = "Swedish Shenanigans";
+    let currency = "EUR".to_owned();
+    let back_link = format!(
+        "/{nobt_id}/bill?{}",
+        serde_urlencoded::to_string(&params).unwrap()
+    );
+    let names = ["Thomas", "Simon", "Prada", "Benji"];
+
+    let new_debtee_entry = match params.debtee.as_deref() {
+        None => None,
+        Some(debtee) if names.contains(&debtee) => None,
+        Some(debtee) => {
+            Some(rsx! { <ChooseDebteeForm nobt_id={&nobt_id} name={debtee} is_checked={true} /> })
+        }
+    };
+
+    html_200(html! {
+        <App title={title}>
+            <Header>
+                <LinkIcon href={&back_link} name={"chevron_left"} />
+                <HeaderTitle title={"Select debtee"} />
+            </Header>
+            <div class={"bg-turquoise p-4 flex flex-col gap-4"}>
+                <section class={"flex flex-col bg-white p-2 gap-2"}>
+                    <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
+
+                    {names
+                        .iter()
+                        .map(|name| {
+                            let is_current_debtee = params.debtee.as_ref().map(|d| &d == name).unwrap_or_else(|| false);
+
+                            rsx! {
+                                <ChooseDebteeForm nobt_id={&nobt_id} name={name} is_checked={is_current_debtee} />
+                            }
+                        })
+                        .collect::<Vec<_>>()}
+
+                    {new_debtee_entry}
+                </section>
+
+                <section class={"flex flex-col bg-white p-2 gap-2"}>
+                    <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
+
+                    <form action={format!("/{nobt_id}/bill")} class={"w-full flex items-center"}>
+                        <input class={"flex-grow p-2 truncate"} type={"text"} name={"debtee"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
+                        <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer"}>
+                            {"Add"}
+                        </button>
+                    </form>
+                </section>
+            </div>
+        </App>
+    })
+}
+
+#[component]
+fn ChooseDebteeForm<'a>(nobt_id: &'a str, name: &'a str, is_checked: bool) {
+    rsx! {
+        <form method={"get"} action={format!("/{nobt_id}/bill")} class={"w-full"}>
+            <input type={"hidden"} name={"debtee"} value={name} />
+            <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer w-full"}>
+                <Avatar name={name} />
+                <span class={"flex-grow text-left"}>{name}</span>
+                <span class={"flex items-center justify-center rounded-full border border-darkGrey w-3.5 h-3.5"}>
+                    {is_checked.then(|| rsx! {
+                        <span class={"block bg-turquoise rounded-full w-2 h-2"}></span>
+                    })}
+                </span>
+            </button>
+        </form>
+    }
+}
+
+#[component]
+fn PersonRadiobox<'a>(name: &'a str, required: bool) {
+    let id = format!("{name}_debtee");
+
+    rsx! {
+        <div class={"flex items-center w-full gap-2 hover:bg-hover"}>
+            <label class={"flex items-center flex-grow gap-2 p-2"} for={id.clone()}>
+                <Avatar name={name} />
+                <span class={"flex-grow"}>{name}</span>
+            </label>
+            <div class={"p-2 flex items-center justify-center"}>
+                <input id={id} required={required.to_string()} type={"radio"} name={"debtee"} value={name} /> // TODO: Make a custom input based on brand colors
+            </div>
+        </div>
+    }
+}
+
+#[component]
+fn PersonCheckbox<'a>(name: &'a str) {
+    let id = format!("{name}_involved_checkbox");
+
+    rsx! {
+        <div class={"flex items-center w-full gap-2 hover:bg-hover"}>
+            <label class={"flex items-center flex-grow gap-2 p-2"} for={id.clone()}>
+                <Avatar name={name} />
+                <span class={"flex-grow"}>{name}</span>
+            </label>
+            <div class={"p-2 flex items-center justify-center"}>
+                <input id={id} checked={"true"} type={"checkbox"} name={"involved"} value={name} />  // TODO: Make a custom input based on brand colors
+            </div>
+        </div>
+    }
 }
 
 async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
@@ -444,7 +675,7 @@ where
 {
     rsx! {
         <li>
-            <a class={"block flex items-center gap-4 hover:bg-hover p-2"} href={href}>
+            <a class={"block flex items-center gap-4 cursor-pointer hover:bg-hover p-2"} href={href}>
                 {children}
                 <Icon name={"chevron_right"} />
             </a>
@@ -460,7 +691,7 @@ where
     rsx! {
         <li>
             <form action={href} method={"post"} hx-confirm={confirm}>
-                <button type={"submit"} class={"block flex items-center gap-4 w-full hover:bg-hover p-2"}>
+                <button type={"submit"} class={"block flex items-center gap-4 w-full cursor-pointer hover:bg-hover p-2"}>
                     {children}
                 </button>
             </form>

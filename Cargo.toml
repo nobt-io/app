@@ -6,7 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.22.0", features =["full"] }
+tokio = { version = "1.22.0", features = ["full"] }
 axum = "0.6.0"
 render = { git = "https://github.com/render-rs/render.rs" }
 anyhow = "1.0.66"
+serde = { version = "1", features = ["derive"] }
+serde_urlencoded = "0.7.1"
