@@ -146,14 +146,6 @@ async fn new_bill(
     ]);
 
     // TODO: Merge into component?
-    let debtee_text = match &params.debtee {
-        Some(debtee) => format!("{debtee} paid the bill."),
-        None => "Select a Debtee".to_owned(),
-    };
-    let debtee_text_styles = match &params.debtee {
-        Some(_) => "text-black flex-grow",
-        None => "text-[grey] flex-grow",
-    };
     if let Some(new_debtee) = &params.debtee {
         names.insert(new_debtee.to_owned());
     }
@@ -187,7 +179,15 @@ async fn new_bill(
                     <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
                     <a href={select_debtee_link} class={"flex items-center hover:bg-hover cursor-pointer"}>
                         <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"person"}</span>
-                        <span class={debtee_text_styles}>{debtee_text.as_str()}</span>
+                        <span class={match &params.debtee {
+                            Some(_) => "text-black text-left flex-grow",
+                            None => "text-[grey] text-left flex-grow",
+                        }}>
+                            {match &params.debtee {
+                                Some(debtee) => format!("{debtee} paid the bill."),
+                                None => "Select a Debtee".to_owned(),
+                            }}
+                        </span>
                         <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>{"edit"}</span>
                     </a>
                     <span class={"text-xs text-[grey]"}>{"Select the person who paid this bill."}</span>
