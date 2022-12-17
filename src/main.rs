@@ -1,5 +1,9 @@
+mod responses;
+
 use anyhow::{Context, Result};
+use axum::body::{Bytes, Full};
 use axum::extract::Path;
+use axum::http::{header, HeaderValue};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::routing::post;
@@ -7,6 +11,8 @@ use axum::Router;
 use axum_extra::extract::{Form, Query};
 use render::html::HTML5Doctype;
 use render::*;
+use responses::Css;
+use responses::Jpeg;
 use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
@@ -14,6 +20,7 @@ use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 
 const STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
+const NOT_FOUND_IMAGE: &[u8] = include_bytes!("../stock-photo-stack-424916446.jpg");
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -24,7 +31,8 @@ async fn main() -> Result<()> {
         .context("failed to parse port")?;
 
     let app = Router::new()
-        .route("/style.css", get(styles))
+        .route("/style.css", get(|| async { Css(STYLES) }))
+        .route("/not_found.jpg", get(|| async { Jpeg(NOT_FOUND_IMAGE) }))
         .route("/:nobt_id", get(nobt))
         .route("/:nobt_id/bill", get(new_bill))
         .route("/:nobt_id/bill", post(add_new_bill))
@@ -33,7 +41,8 @@ async fn main() -> Result<()> {
         .route("/:nobt_id/balances", get(balances))
         .route("/:nobt_id/balances/:name", get(individual_balance))
         .route("/:nobt_id/:expense_id", get(expense))
-        .route("/:nobt_id/:expense_id/delete", post(delete_expense));
+        .route("/:nobt_id/:expense_id/delete", post(delete_expense))
+        .fallback(not_found);
 
     axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], port)))
         .serve(app.into_make_service())
@@ -666,11 +675,31 @@ async fn delete_expense(Path((nobt_id, _expense_id)): Path<(String, u64)>) -> im
         .unwrap()
 }
 
-async fn styles() -> impl IntoResponse {
-    Response::builder()
-        .header("Content-Type", "text/css")
-        .body(STYLES.to_owned())
-        .unwrap()
+async fn not_found() -> impl IntoResponse {
+    Html(html! {
+        <>
+            <HTML5Doctype />
+            <Head title={"Not found"} />
+            <body hx-boost={"true"} class={"bg-turquoise sm:bg-lightGrey h-screen"}>
+                <div class={"sm:pt-10"}>
+                    <div class={"bg-turquoise container mx-auto sm:shadow-lg sm:rounded-lg max-w-3xl"}>
+                        <Header>
+                            <h1 class={"text-xl"}>{"nobt.io"}</h1>
+                        </Header>
+                        <div class={"p-12 flex flex-col gap-4 items-center"}>
+                            // <div class={"bg-cover h-80 w-2/3 bg-center bg-[url('/not_found.jpg')]"}>{""}</div>
+
+                            <h2 class={"text-lg w-72 text-center text-white"}>{"We looked everywhere but couldn't find this nobt."}</h2>
+
+                            <a class={"bg-white rounded-md px-4 py-2 shadow"} href={"/create"}>
+                                {"Create a new nobt"}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </body>
+        </>
+    })
 }
 
 struct ExpenseItem {
@@ -704,44 +733,7 @@ where
     rsx! {
         <>
             <HTML5Doctype />
-            <head>
-                <title>{title}</title>
-                <meta charset={"utf-8"} />
-                <meta name={"google-site-verification"} content={"RxNEUdqyb3p6Q7WHOTY2C5hzwOFMwFUcjRFvYNFoRf0"} />
-                <meta name={"viewport"} content={"width=device-width, initial-scale=1"} />
-                <meta name={"description"} content={"Nobt.io is a free service to split bills among your friends. It is super simple and ease to use. Create a nobt, share the link with your friends and start splitting bills."} />
-                <meta name={"keywords"} content={"nobt,nobtio,bills,friends,ease,payments,settle up,split bills,money,trips,roadtrips,lunch,party"} />
-                <link href={"https://fonts.googleapis.com/css?family=Courgette|Comfortaa:700"} rel={"stylesheet"} />
-                <link href={"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0"} rel={"stylesheet"}/>
-                <link href={"/style.css"} rel={"stylesheet"}/>
-                // <script src={"https://unpkg.com/htmx.org@1.8.4/dist/htmx.js"} crossorigin={"anonymous"}>{""}</script>
-                <script src={"https://unpkg.com/htmx.org@1.8.4"} integrity={"sha384-wg5Y/JwF7VxGk4zLsJEcAojRtlVp1FKKdGy1qN+OMtdq72WRvX/EdRdqg/LOhYeV"} crossorigin={"anonymous"}>{""}</script>
-                // TODO: Wait for https://github.com/bigskysoftware/htmx/pull/1156 to be released or we fork it.
-                // <script>
-                //     {raw! {
-                //         r#"
-                //         htmx.on('htmx:configRequest', function (e) {
-                //           const element = e.detail.elt;
-                //           if (element && element.nodeName === 'FORM') {
-                //             let submitter = e.detail.triggeringEvent.submitter;
-                //             if (submitter) {
-                //              // Element also has "formAction" field, but if "formaction" attribute is not filled then it has a default value.
-                //              // So we specifically need to check for the existence of the attribute
-                //              const form_action = submitter.attributes['formaction'];
-                //               if (form_action && form_action.value) {
-                //                 e.detail.path = form_action;
-                //               }
-                //
-                //               const form_method = submitter.attributes['formmethod']
-                //               if (form_method && form_method.value) {
-                //                 e.detail.verb = form_method.value.toLowerCase();
-                //               }
-                //             }
-                //           }
-                //         });"#
-                //     }}
-                // </script>
-            </head>
+            <Head title={title} />
             <body hx-boost={"true"} class={"bg-lightGrey h-screen"}>
                 <div class={"sm:pt-10"}>
                     <div class={"container mx-auto shadow-lg rounded-lg max-w-3xl"}>
@@ -750,6 +742,50 @@ where
                 </div>
             </body>
         </>
+    }
+}
+
+#[component]
+fn Head<'a>(title: &'a str) {
+    rsx! {
+        <head>
+            <title>{title}</title>
+            <meta charset={"utf-8"} />
+            <meta name={"google-site-verification"} content={"RxNEUdqyb3p6Q7WHOTY2C5hzwOFMwFUcjRFvYNFoRf0"} />
+            <meta name={"viewport"} content={"width=device-width, initial-scale=1"} />
+            <meta name={"description"} content={"Nobt.io is a free service to split bills among your friends. It is super simple and ease to use. Create a nobt, share the link with your friends and start splitting bills."} />
+            <meta name={"keywords"} content={"nobt,nobtio,bills,friends,ease,payments,settle up,split bills,money,trips,roadtrips,lunch,party"} />
+            <link href={"https://fonts.googleapis.com/css?family=Courgette|Comfortaa:700"} rel={"stylesheet"} />
+            <link href={"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0"} rel={"stylesheet"}/>
+            <link href={"/style.css"} rel={"stylesheet"}/>
+            // <script src={"https://unpkg.com/htmx.org@1.8.4/dist/htmx.js"} crossorigin={"anonymous"}>{""}</script>
+            <script src={"https://unpkg.com/htmx.org@1.8.4"} integrity={"sha384-wg5Y/JwF7VxGk4zLsJEcAojRtlVp1FKKdGy1qN+OMtdq72WRvX/EdRdqg/LOhYeV"} crossorigin={"anonymous"}>{""}</script>
+            // TODO: Wait for https://github.com/bigskysoftware/htmx/pull/1156 to be released or we fork it.
+            // <script>
+            //     {raw! {
+            //         r#"
+            //         htmx.on('htmx:configRequest', function (e) {
+            //           const element = e.detail.elt;
+            //           if (element && element.nodeName === 'FORM') {
+            //             let submitter = e.detail.triggeringEvent.submitter;
+            //             if (submitter) {
+            //              // Element also has "formAction" field, but if "formaction" attribute is not filled then it has a default value.
+            //              // So we specifically need to check for the existence of the attribute
+            //              const form_action = submitter.attributes['formaction'];
+            //               if (form_action && form_action.value) {
+            //                 e.detail.path = form_action;
+            //               }
+            //
+            //               const form_method = submitter.attributes['formmethod']
+            //               if (form_method && form_method.value) {
+            //                 e.detail.verb = form_method.value.toLowerCase();
+            //               }
+            //             }
+            //           }
+            //         });"#
+            //     }}
+            // </script>
+        </head>
     }
 }
 

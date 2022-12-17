@@ -24,7 +24,10 @@ module.exports = {
       },
       scale: {
         '200': '1.75'
-      }
+      },
+      blur: {
+        xs: '2px'
+      },
     }
   }
 }

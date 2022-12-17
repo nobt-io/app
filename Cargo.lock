@@ -15,6 +15,7 @@ dependencies = [
  "anyhow",
  "axum",
  "axum-extra",
+ "mime",
  "render",
  "serde",
  "serde_html_form",
