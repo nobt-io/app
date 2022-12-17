@@ -242,7 +242,7 @@ async fn new_bill(
                 </section>
                 <div>
                     <button class={"flex items-center justify-center gap-2 text-white uppercase rounded shadow px-4 py-2 bg-darkGreen"} type={"submit"} formmethod={"post"}>
-                        <span class={"material-symbols-outlined"}>{"check_circle"}</span>
+                        <Icon name={"check_circle"} />
                         {"Add bill"}
                     </button>
                 </div>
@@ -275,19 +275,24 @@ async fn choose_bill_debtee(
         "/{nobt_id}/bill?{}",
         serde_html_form::to_string(&params).unwrap()
     );
-    let mut names = HashSet::from(["Thomas", "Simon", "Prada", "Benji"]);
+    let mut names = HashSet::from([
+        "Thomas".to_owned(),
+        "Simon".to_owned(),
+        "Prada".to_owned(),
+        "Benji".to_owned(),
+    ]);
 
     if let Some(debtee) = params.debtee.as_ref() {
-        names.insert(debtee);
+        names.insert(debtee.to_owned());
     }
-    if let Some(debtors) = params.debtors.as_ref() {
-        names.extend(debtors.iter().map(|s| s.as_str()));
+    if let Some(debtors) = params.debtors.clone() {
+        names.extend(debtors.iter().map(|s| s.to_owned()));
     }
 
     let bill_name = params.name.as_deref();
     let selected_debtee = params.debtee.as_deref();
     let total = params.total.as_ref();
-    let debtors = params.debtors.as_ref();
+    let debtors = params.debtors.unwrap_or_default();
 
     Html(html! {
         <App title={title}>
@@ -305,7 +310,7 @@ async fn choose_bill_debtee(
                             let is_current_debtee = selected_debtee.map(|sd| &sd == debtee).unwrap_or(false);
 
                             rsx! {
-                                <ChooseDebteeForm nobt_id={&nobt_id} name={bill_name} total={total} debtee={debtee} debtors={debtors} is_checked={is_current_debtee} />
+                                <ChooseDebteeForm nobt_id={&nobt_id} name={bill_name} total={total} debtee={debtee} debtors={&debtors} is_checked={is_current_debtee} />
                             }
                         })
                         .collect::<Vec<_>>()}
@@ -321,6 +326,12 @@ async fn choose_bill_debtee(
                         {total.map(|total| rsx! {
                             <input type={"hidden"} name={"total"} value={total.to_string()} />
                         })}
+                        {debtors
+                            .iter()
+                            .map(|d| rsx! {
+                                <input type={"hidden"} name={"debtors"} value={d}/>
+                            })
+                            .collect::<Vec<_>>()}
                         <input class={"outline-none border-b appearance-none w-full flex-grow p-2 truncate"} type={"text"} name={"debtee"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
                         <button class={"flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow cursor-pointer"}>
                             <Icon name={"person_add"} />
@@ -347,19 +358,24 @@ async fn choose_bill_debtors(
         "/{nobt_id}/bill?{}",
         serde_html_form::to_string(&params).unwrap()
     );
-    let mut names = HashSet::from(["Thomas", "Simon", "Prada", "Benji"]);
+    let mut names = HashSet::from([
+        "Thomas".to_owned(),
+        "Simon".to_owned(),
+        "Prada".to_owned(),
+        "Benji".to_owned(),
+    ]);
 
     if let Some(debtee) = params.debtee.as_ref() {
-        names.insert(debtee);
+        names.insert(debtee.to_owned());
     }
-    if let Some(debtors) = params.debtors.as_ref() {
-        names.extend(debtors.iter().map(|s| s.as_str()));
+    if let Some(debtors) = params.debtors.clone() {
+        names.extend(debtors.iter().map(|s| s.to_owned()));
     }
 
     let bill_name = params.name.as_deref();
     let selected_debtee = params.debtee.as_deref();
     let total = params.total.as_ref();
-    let debtors = params.debtors.as_ref();
+    let debtors = params.debtors.unwrap_or_default();
 
     Html(html! {
         <App title={title}>
@@ -369,32 +385,70 @@ async fn choose_bill_debtors(
             </Header>
             <div class={"bg-turquoise p-4 flex flex-col gap-4"}>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
+                    <h2 class={"text-black font-bold text-sm"}>{"Who is in?"}</h2>
 
-                    {names
-                        .iter()
-                        .map(|debtee| {
-                            let is_current_debtee = selected_debtee.map(|sd| &sd == debtee).unwrap_or(false);
+                    <form action={format!("/{nobt_id}/bill")}>
+                        {bill_name.map(|name| rsx! {
+                            <input type={"hidden"} name={"name"} value={name} />
+                        })}
+                        {selected_debtee.map(|debtee| rsx! {
+                            <input type={"hidden"} name={"debtee"} value={debtee} />
+                        })}
+                        {total.map(|total| rsx! {
+                            <input type={"hidden"} name={"total"} value={total.to_string()} />
+                        })}
+                        {names
+                            .iter()
+                            .map(|d| {
+                                let id = format!("{d}_involved_checkbox");
 
-                            rsx! {
-                                <ChooseDebteeForm nobt_id={&nobt_id} name={bill_name} total={total} debtee={debtee} debtors={debtors} is_checked={is_current_debtee} />
-                            }
-                        })
-                        .collect::<Vec<_>>()}
+                                rsx! {
+                                    <div class={"flex items-center hover:bg-hover p-2 cursor-pointer"}>
+                                        <label class={"flex-grow flex items-center gap-2"} for={id.clone()}>
+                                            <Avatar name={d.as_str()} />
+                                            {d.as_str()}
+                                        </label>
+                                        {if debtors.contains(d) || debtors.is_empty() {
+                                            rsx! { <input id={id} type={"checkbox"} name={"debtors"} checked={"checked"} value={d.as_str()}/> }
+                                        } else {
+                                            rsx! { <input id={id} type={"checkbox"} name={"debtors"} value={d.as_str()}/> }
+                                        }}
+                                    </div>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
+
+                        <div class={"flex flex-row-reverse"}>
+                            <button type={"submit"} class={"flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow w-full justify-center"}> // TODO: Make this a button component.
+                                <Icon name={"check_circle"}/>
+                                {"Set debtors"}
+                            </button>
+                        </div>
+                    </form>
                 </section>
 
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
 
-                    <form action={format!("/{nobt_id}/bill")} class={"w-full flex items-center"}>
+                    <form action={format!("/{nobt_id}/bill/debtors")} class={"w-full flex items-center gap-2"}>
                         {bill_name.map(|name| rsx! {
                             <input type={"hidden"} name={"name"} value={name} />
+                        })}
+                        {selected_debtee.map(|debtee| rsx! {
+                            <input type={"hidden"} name={"debtee"} value={debtee} />
                         })}
                         {total.map(|total| rsx! {
                             <input type={"hidden"} name={"total"} value={total.to_string()} />
                         })}
-                        <input class={"flex-grow p-2 truncate"} type={"text"} name={"debtee"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
-                        <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer"}>
+                        {debtors
+                            .iter()
+                            .map(|d| rsx! {
+                                <input type={"hidden"} name={"debtors"} value={d}/>
+                            })
+                            .collect::<Vec<_>>()}
+                        <input class={"outline-none border-b appearance-none w-full flex-grow p-2 truncate"} type={"text"} name={"debtors"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
+                        <button class={"flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow"}>
+                            <Icon name={"person_add"} />
                             {"Add"}
                         </button>
                     </form>
@@ -410,7 +464,7 @@ fn ChooseDebteeForm<'a>(
     name: Option<&'a str>,
     total: Option<&'a f64>,
     debtee: &'a str,
-    debtors: Option<&'a HashSet<String>>,
+    debtors: &'a HashSet<String>,
     is_checked: bool,
 ) {
     rsx! {
@@ -422,6 +476,12 @@ fn ChooseDebteeForm<'a>(
             {total.map(|total| rsx! {
                 <input type={"hidden"} name={"total"} value={total.to_string()} />
             })}
+            {debtors
+                .iter()
+                .map(|d| rsx! {
+                    <input type={"hidden"} name={"debtors"} value={d}/>
+                })
+                .collect::<Vec<_>>()}
             <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer w-full"}>
                 <Avatar name={debtee} />
                 <span class={"flex-grow text-left"}>{debtee}</span>
