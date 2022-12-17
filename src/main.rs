@@ -314,15 +314,16 @@ async fn choose_bill_debtee(
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
 
-                    <form action={format!("/{nobt_id}/bill")} class={"w-full flex items-center"}>
+                    <form action={format!("/{nobt_id}/bill")} class={"w-full flex items-center gap-2"}>
                         {bill_name.map(|name| rsx! {
                             <input type={"hidden"} name={"name"} value={name} />
                         })}
                         {total.map(|total| rsx! {
                             <input type={"hidden"} name={"total"} value={total.to_string()} />
                         })}
-                        <input class={"flex-grow p-2 truncate"} type={"text"} name={"debtee"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
-                        <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer"}>
+                        <input class={"outline-none border-b appearance-none w-full flex-grow p-2 truncate"} type={"text"} name={"debtee"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
+                        <button class={"flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow cursor-pointer"}>
+                            <Icon name={"person_add"} />
                             {"Add"}
                         </button>
                     </form>
