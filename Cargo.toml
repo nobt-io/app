@@ -16,4 +16,4 @@ serde_html_form = "0.1.0"
 mime = "0.3.16"
 
 [patch.crates-io]
-"serde_html_form" = { git = "https://github.com/thomaseizinger/serde_html_form", branch = "main" }
+"serde_html_form" = { git = "https://github.com/thomaseizinger/serde_html_form", branch = "no-value-option" }

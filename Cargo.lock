@@ -513,7 +513,7 @@ dependencies = [
 [[package]]
 name = "serde_html_form"
 version = "0.1.0"
-source = "git+https://github.com/thomaseizinger/serde_html_form?branch=main#14eba888bba7581080382868e7d841f774a03189"
+source = "git+https://github.com/thomaseizinger/serde_html_form?branch=no-value-option#1efe6692f7d2211012e1fbc599ad89a173861873"
 dependencies = [
  "form_urlencoded",
  "indexmap",
