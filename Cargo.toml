@@ -12,8 +12,5 @@ render = { git = "https://github.com/render-rs/render.rs" }
 anyhow = "1.0.66"
 serde = { version = "1", features = ["derive"] }
 axum-extra = { version = "0.4.1", features = ["form", "query"] }
-serde_html_form = "0.1.0"
+serde_html_form = "0.2.2"
 mime = "0.3.16"
-
-[patch.crates-io]
-"serde_html_form" = { git = "https://github.com/thomaseizinger/serde_html_form", branch = "no-value-option" }
