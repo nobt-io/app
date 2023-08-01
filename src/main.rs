@@ -819,33 +819,42 @@ fn Head<'a>(title: &'a str) {
             <link href={"https://fonts.googleapis.com/css?family=Courgette|Comfortaa:700"} rel={"stylesheet"} />
             <link href={"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0"} rel={"stylesheet"}/>
             <link href={"/style.css"} rel={"stylesheet"}/>
-            // <script src={"https://unpkg.com/htmx.org@1.8.4/dist/htmx.js"} crossorigin={"anonymous"}>{""}</script>
-            <script src={"https://unpkg.com/htmx.org@1.8.4"} integrity={"sha384-wg5Y/JwF7VxGk4zLsJEcAojRtlVp1FKKdGy1qN+OMtdq72WRvX/EdRdqg/LOhYeV"} crossorigin={"anonymous"}>{""}</script>
-            // TODO: Wait for https://github.com/bigskysoftware/htmx/pull/1156 to be released or we fork it.
-            // <script>
-            //     {raw! {
-            //         r#"
-            //         htmx.on('htmx:configRequest', function (e) {
-            //           const element = e.detail.elt;
-            //           if (element && element.nodeName === 'FORM') {
-            //             let submitter = e.detail.triggeringEvent.submitter;
-            //             if (submitter) {
-            //              // Element also has "formAction" field, but if "formaction" attribute is not filled then it has a default value.
-            //              // So we specifically need to check for the existence of the attribute
-            //              const form_action = submitter.attributes['formaction'];
-            //               if (form_action && form_action.value) {
-            //                 e.detail.path = form_action;
-            //               }
-            //
-            //               const form_method = submitter.attributes['formmethod']
-            //               if (form_method && form_method.value) {
-            //                 e.detail.verb = form_method.value.toLowerCase();
-            //               }
-            //             }
-            //           }
-            //         });"#
-            //     }}
-            // </script>
+            <script src={"https://unpkg.com/htmx.org@1.9.1/dist/htmx.js"} crossorigin={"anonymous"}>{""}</script>
+            <script>
+                {raw! {
+                    r#"
+                    htmx.on('htmx:configRequest', function (event) {
+                        debugger;
+
+                        if (event.detail.elt?.nodeName !== 'FORM') {
+                            return;
+                        }
+
+                        const submitter = event.detail.triggeringEvent?.submitter;
+
+                        if (!submitter) {
+                            return;
+                        }
+
+                        // Element also has "formAction" field, but if "formaction" attribute is not filled then it has a default value.
+                        // So we specifically need to check for the existence of the attribute
+                        let formAction = submitter?.attributes?.formaction?.value;
+                        let formMethod = submitter?.attributes?.formmethod?.value;
+
+                        if (formAction) {
+                            let oldUrl = new URL(event.detail.path);
+                            oldUrl.pathname = formAction;
+
+                            event.detail.path = oldUrl.toString();
+                        }
+
+                        if (formMethod) {
+                            event.detail.verb = formMethod.toLowerCase();
+                        }
+                    })
+                    ;"#
+                }}
+            </script>
         </head>
     }
 }
