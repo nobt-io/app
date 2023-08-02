@@ -824,8 +824,6 @@ fn Head<'a>(title: &'a str) {
                 {raw! {
                     r#"
                     htmx.on('htmx:configRequest', function (event) {
-                        debugger;
-
                         if (event.detail.elt?.nodeName !== 'FORM') {
                             return;
                         }
