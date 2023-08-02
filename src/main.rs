@@ -112,7 +112,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                     </li>
                 </ul>
                 <div class={"text-center"}>
-                    <a href={balances_url} class={"uppercase inline-block bg-darkGreen px-3 py-2"}>{"Show balances"}</a>
+                    <a href={balances_url} class={"uppercase inline-block bg-darkGreen px-3 py-2"} preload={"mousedown"}>{"Show balances"}</a>
                 </div>
             </div>
             <div class={"bg-white p-4"}>
@@ -791,7 +791,7 @@ where
         <>
             <HTML5Doctype />
             <Head title={title} />
-            <body hx-boost={"true"} class={"bg-lightGrey h-screen"}>
+            <body hx-boost={"true"} hx-ext={"preload"} class={"bg-lightGrey h-screen"}>
                 <div class={"sm:pt-10"}>
                     <div class={"container mx-auto shadow-lg rounded-lg max-w-3xl"}>
                         {children}
@@ -816,6 +816,7 @@ fn Head<'a>(title: &'a str) {
             <link href={"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0"} rel={"stylesheet"}/>
             <link href={"/style.css"} rel={"stylesheet"}/>
             <script src={"https://unpkg.com/htmx.org@1.9.1/dist/htmx.js"} crossorigin={"anonymous"}>{""}</script>
+            <script src={"https://unpkg.com/htmx.org/dist/ext/preload.js"} crossorigin={"anonymous"}>{""}</script>
             <script>
                 {raw! {
                     r#"
@@ -908,7 +909,7 @@ where
 {
     rsx! {
         <li>
-            <a class={"block flex items-center gap-4 cursor-pointer hover:bg-hover p-2"} href={href}>
+            <a class={"block flex items-center gap-4 cursor-pointer hover:bg-hover p-2"} href={href} preload={"mousedown"}>
                 {children}
                 <Icon name={"chevron_right"} />
             </a>
