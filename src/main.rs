@@ -1,23 +1,23 @@
-mod responses;
-
 use anyhow::{Context, Result};
-use axum::body::{Bytes, Full};
 use axum::extract::Path;
-use axum::http::{header, HeaderValue};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
-use axum_extra::extract::{Form, Query};
+use axum_extra::extract::Form;
 use render::html::HTML5Doctype;
 use render::*;
-use responses::Css;
-use responses::Jpeg;
 use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
+
+use responses::Css;
+use responses::Jpeg;
+
+mod headers;
+mod responses;
 
 const STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
 const NOT_FOUND_IMAGE: &[u8] = include_bytes!("../stock-photo-stack-424916446.jpg");
@@ -35,9 +35,11 @@ async fn main() -> Result<()> {
         .route("/not_found.jpg", get(|| async { Jpeg(NOT_FOUND_IMAGE) }))
         .route("/:nobt_id", get(nobt))
         .route("/:nobt_id/bill", get(new_bill))
-        .route("/:nobt_id/bill", post(add_new_bill))
-        .route("/:nobt_id/bill/debtee", get(choose_bill_debtee))
+        .route("/:nobt_id/bill", post(new_bill))
+        .route("/:nobt_id/bill/new", post(add_new_bill))
+        .route("/:nobt_id/bill/debtee", post(choose_bill_debtee))
         .route("/:nobt_id/bill/debtors", get(choose_bill_debtors))
+        .route("/:nobt_id/bill/debtors", post(choose_bill_debtors))
         .route("/:nobt_id/balances", get(balances))
         .route("/:nobt_id/balances/:name", get(individual_balance))
         .route("/:nobt_id/:expense_id", get(expense))
@@ -144,10 +146,10 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
 
 async fn new_bill(
     Path(nobt_id): Path<String>,
-    Query(params): Query<NewBillParameters>,
+    Form(params): Form<NewBillParameters>,
 ) -> impl IntoResponse {
     let title = "Swedish Shenanigans";
-    let currency = "EUR".to_owned();
+    let _currency = "EUR".to_owned();
     let nobt_url = format!("/{nobt_id}");
     let mut names = HashSet::from([
         "Thomas".to_owned(),
@@ -166,7 +168,7 @@ async fn new_bill(
     Html(html! {
         <App title={title}>
             <Header>
-                <LinkIcon href={&nobt_url} name={"chevron_left"} />
+                <BackLink href={&nobt_url}/>
                 <HeaderTitle title={"Add a bill"} />
             </Header>
             <form class={"bg-turquoise p-4 flex flex-col gap-4"}>
@@ -185,7 +187,7 @@ async fn new_bill(
                 </section>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
-                    <button type={"submit"} formnovalidate={"true"} formmethod={"get"} formaction={format!("/{nobt_id}/bill/debtee")} class={"flex items-center hover:bg-hover cursor-pointer"}>
+                    <button type={"submit"} formnovalidate={"true"} formmethod={"post"} formaction={format!("/{nobt_id}/bill/debtee")} class={"flex items-center hover:bg-hover cursor-pointer"}>
                         <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
                             {"person"}
                             {match params.debtee.as_deref() {
@@ -214,7 +216,7 @@ async fn new_bill(
                 </section>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Who is involved?"}</h2>
-                    <button type={"submit"} formnovalidate={"true"} formmethod={"get"} formaction={format!("/{nobt_id}/bill/debtors")} class={"flex items-center hover:bg-hover cursor-pointer"}>
+                    <button type={"submit"} formnovalidate={"true"} formmethod={"post"} formaction={format!("/{nobt_id}/bill/debtors")} class={"flex items-center hover:bg-hover cursor-pointer"}>
                         <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
                             {"group"}
                         </span>
@@ -241,7 +243,7 @@ async fn new_bill(
                     <span class={"text-xs text-[grey]"}>{"Select who is involved in this bill."}</span>
                 </section>
                 <div>
-                    <button class={"flex items-center justify-center gap-2 text-white uppercase rounded shadow px-4 py-2 bg-darkGreen"} type={"submit"} formmethod={"post"}>
+                    <button class={"flex items-center justify-center gap-2 text-white uppercase rounded shadow px-4 py-2 bg-darkGreen"} type={"submit"} formmethod={"post"} formaction={format!("/{nobt_id}/bill/new")}>
                         <Icon name={"check_circle"} />
                         {"Add bill"}
                     </button>
@@ -267,14 +269,11 @@ struct NewBillForm {
 
 async fn choose_bill_debtee(
     Path(nobt_id): Path<String>,
-    Query(params): Query<NewBillParameters>,
+    Form(params): Form<NewBillParameters>,
 ) -> impl IntoResponse {
     let title = "Swedish Shenanigans";
-    let currency = "EUR".to_owned();
-    let back_link = format!(
-        "/{nobt_id}/bill?{}",
-        serde_html_form::to_string(&params).unwrap()
-    );
+    let _currency = "EUR".to_owned();
+    let back_link = format!("/{nobt_id}/bill");
     let mut names = HashSet::from([
         "Thomas".to_owned(),
         "Simon".to_owned(),
@@ -297,7 +296,7 @@ async fn choose_bill_debtee(
     Html(html! {
         <App title={title}>
             <Header>
-                <LinkIcon href={&back_link} name={"chevron_left"} />
+                <BackLink href={&back_link}/>
                 <HeaderTitle title={"Select debtee"} />
             </Header>
             <div class={"bg-turquoise p-4 flex flex-col gap-4"}>
@@ -319,7 +318,7 @@ async fn choose_bill_debtee(
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
 
-                    <form action={format!("/{nobt_id}/bill")} class={"w-full flex items-center gap-2"}>
+                    <form method={"post"} action={format!("/{nobt_id}/bill")} class={"w-full flex items-center gap-2"}>
                         {bill_name.map(|name| rsx! {
                             <input type={"hidden"} name={"name"} value={name} />
                         })}
@@ -350,14 +349,11 @@ async fn choose_bill_debtee(
 // - needs add person button
 async fn choose_bill_debtors(
     Path(nobt_id): Path<String>,
-    Query(params): Query<NewBillParameters>,
+    Form(params): Form<NewBillParameters>,
 ) -> impl IntoResponse {
     let title = "Swedish Shenanigans";
-    let currency = "EUR".to_owned();
-    let back_link = format!(
-        "/{nobt_id}/bill?{}",
-        serde_html_form::to_string(&params).unwrap()
-    );
+    let _currency = "EUR".to_owned();
+    let back_link = format!("/{nobt_id}/bill");
     let mut names = HashSet::from([
         "Thomas".to_owned(),
         "Simon".to_owned(),
@@ -375,19 +371,19 @@ async fn choose_bill_debtors(
     let bill_name = params.name.as_deref();
     let selected_debtee = params.debtee.as_deref();
     let total = params.total.as_ref();
-    let debtors = params.debtors.unwrap_or_default();
+    let debtors = params.debtors.unwrap_or(names.clone());
 
     Html(html! {
         <App title={title}>
             <Header>
-                <LinkIcon href={&back_link} name={"chevron_left"} />
+                <BackLink href={&back_link}/>
                 <HeaderTitle title={"Select debtors"} />
             </Header>
             <div class={"bg-turquoise p-4 flex flex-col gap-4"}>
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Who is in?"}</h2>
 
-                    <form action={format!("/{nobt_id}/bill")}>
+                    <form method={"post"} action={format!("/{nobt_id}/bill")}>
                         {bill_name.map(|name| rsx! {
                             <input type={"hidden"} name={"name"} value={name} />
                         })}
@@ -430,7 +426,7 @@ async fn choose_bill_debtors(
                 <section class={"flex flex-col bg-white p-2 gap-2"}>
                     <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
 
-                    <form action={format!("/{nobt_id}/bill/debtors")} class={"w-full flex items-center gap-2"}>
+                    <form method={"post"} action={format!("/{nobt_id}/bill/debtors")} class={"w-full flex items-center gap-2"}>
                         {bill_name.map(|name| rsx! {
                             <input type={"hidden"} name={"name"} value={name} />
                         })}
@@ -468,7 +464,7 @@ fn ChooseDebteeForm<'a>(
     is_checked: bool,
 ) {
     rsx! {
-        <form method={"get"} action={format!("/{nobt_id}/bill")} class={"w-full"}>
+        <form method={"post"} action={format!("/{nobt_id}/bill")} class={"w-full"}>
             <input type={"hidden"} name={"debtee"} value={debtee} />
             {name.map(|name| rsx! {
                 <input type={"hidden"} name={"name"} value={name} />
@@ -560,7 +556,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
     Html(html! {
         <App title={title}>
             <Header>
-                <LinkIcon href={&nobt_url} name={"chevron_left"} />
+                <BackLink href={&nobt_url}/>
                 <HeaderTitle title={"Balances"} />
             </Header>
             <div class={"bg-white p-4"}>
@@ -611,7 +607,7 @@ async fn individual_balance(Path((nobt_id, name)): Path<(String, String)>) -> im
     Html(html! {
         <App title={title}>
             <Header>
-                <LinkIcon href={&back_url} name={"chevron_left"} />
+                <BackLink href={&back_url} />
                 <HeaderTitle title={&name} />
             </Header>
             <div class={"bg-white p-4 flex flex-col gap-4"}>
@@ -673,7 +669,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
     Html(html! {
         <App title={title}>
             <Header>
-                <LinkIcon href={&nobt_url} name={"chevron_left"} />
+                <BackLink href={&nobt_url}/>
                 <HeaderTitle title={name} />
             </Header>
             <div class={"bg-white p-4 flex flex-col gap-4"}>
@@ -824,6 +820,8 @@ fn Head<'a>(title: &'a str) {
                 {raw! {
                     r#"
                     htmx.on('htmx:configRequest', function (event) {
+                        // debugger;
+
                         if (event.detail.elt?.nodeName !== 'FORM') {
                             return;
                         }
@@ -837,7 +835,7 @@ fn Head<'a>(title: &'a str) {
                         // Element also has "formAction" field, but if "formaction" attribute is not filled then it has a default value.
                         // So we specifically need to check for the existence of the attribute
                         let formAction = submitter?.attributes?.formaction?.value;
-                        let formMethod = submitter?.attributes?.formmethod?.value;
+                        let formMethod = submitter?.attributes?.formmethod?.value?.toLowerCase();
 
                         if (formAction) {
                             let oldUrl = new URL(event.detail.path);
@@ -847,7 +845,11 @@ fn Head<'a>(title: &'a str) {
                         }
 
                         if (formMethod) {
-                            event.detail.verb = formMethod.toLowerCase();
+                            event.detail.verb = formMethod;
+
+                            if (formMethod === 'post') {
+                                event.detail.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                            }
                         }
                     })
                     ;"#
@@ -942,6 +944,19 @@ fn LinkIcon<'a>(href: &'a str, name: &'a str) {
     rsx! {
         <a href={href} class={"material-symbols-outlined"}>
             {name}
+        </a>
+    }
+}
+
+/// A back-link component that works with progressive enhancement.
+///
+/// In case we have JS enabled, this will simply trigger `history.back()` which takes the user back to the previous page.
+/// Without JS, we simply navigate to the desired page.
+#[component]
+fn BackLink<'a>(href: &'a str) {
+    rsx! {
+        <a class={"material-symbols-outlined"} href={href} onclick={"{ history.back(); return false; }"}> // TODO: How to use `hx-on` here?
+            {"chevron_left"}
         </a>
     }
 }
