@@ -5,13 +5,11 @@ use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
 use axum_extra::extract::Form;
-use render::html::HTML5Doctype;
-use render::*;
-use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
+use rscx::{component, html, EscapeAttribute, CollectFragmentAsync, CollectFragment};
 
 use responses::Css;
 use responses::Jpeg;
@@ -64,7 +62,7 @@ struct NewBillParameters {
 async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
     let title = "Swedish Shenanigans";
     let total = 1521.00;
-    let currency = "EUR".to_owned();
+    let currency = "EUR";
     let num_participants = 4;
     let expenses = vec![
         ExpenseItem {
@@ -89,54 +87,54 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
     let balances_url = format!("/{nobt_id}/balances");
 
     Html(html! {
-        <App title={title}>
+        <App title=title>
             <Header>
-                <h1 class={"text-xl"}>{"nobt.io"}</h1>
+                <h1 class="text-xl">"nobt.io"</h1>
             </Header>
-            <div class={"bg-turquoise text-white p-4 flex flex-col gap-4"}>
-                <h2 class={"text-center text-3xl"}>
-                    {title}
+            <div class="bg-turquoise text-white p-4 flex flex-col gap-4">
+                <h2 class="text-center text-3xl">
+                    title
                 </h2>
-                <ul class={"flex items-center justify-center space-x-4"}>
-                    <li class={"inline-block"}>
-                        <div class={"flex items-center gap-2 text-sm"}>
-                            <Icon name={"credit_card"} />
-                            <Amount currency={&currency} value={total} classes={""}/>
+                <ul class="flex items-center justify-center space-x-4">
+                    <li class="inline-block">
+                        <div class="flex items-center gap-2 text-sm">
+                            <Icon name="credit_card" />
+                            <Amount currency=currency value=total classes=""/>
                         </div>
                     </li>
-                    <li class={"inline-block"}>
-                        <div class={"flex items-center gap-2 text-sm"}>
-                            <Icon name={"group"} />
-                            {num_participants}
+                    <li class="inline-block">
+                        <div class="flex items-center gap-2 text-sm">
+                            <Icon name="group" />
+                            num_participants
                         </div>
                     </li>
                 </ul>
-                <div class={"text-center"}>
-                    <a href={balances_url} class={"uppercase inline-block bg-darkGreen px-3 py-2"} preload={"mousedown"}>{"Show balances"}</a>
+                <div class="text-center">
+                    <a href=balances_url class="uppercase inline-block bg-darkGreen px-3 py-2" preload="mousedown">"Show balances"</a>
                 </div>
             </div>
-            <div class={"bg-white p-4"}>
+            <div class="bg-white p-4">
                 <List>
                     {expenses
                         .iter()
-                        .map(|expense| {
+                        .map(|expense| async {
                             let classes = if expense.deleted {
                                 "grow flex flex-col line-through opacity-30"
                             } else {
                                 "grow flex flex-col"
                             };
 
-                            rsx! {
+                            html! {
                                 <LinkListItem href={&expense.url}>
-                                    <ListItemIcon name={"receipt"}/>
+                                    <ListItemIcon name="receipt"/>
                                     <span class={classes}>
                                         <span>{expense.description.as_str()}</span>
-                                        <Amount currency={&currency} value={expense.amount} classes={"text-darkGrey"}/>
+                                        <Amount currency=currency value={expense.amount} classes="text-darkGrey"/>
                                     </span>
                                 </LinkListItem>
                             }
                         })
-                        .collect::<Vec<_>>()}
+                        .collect_fragment_async().await}
                 </List>
             </div>
             <FAB nobt_id={&nobt_id}/>
@@ -166,36 +164,36 @@ async fn new_bill(
     let debtors = params.debtors.as_ref().unwrap_or_else(|| &names);
 
     Html(html! {
-        <App title={title}>
+        <App title=title>
             <Header>
                 <BackLink href={&nobt_url}/>
-                <HeaderTitle title={"Add a bill"} />
+                <HeaderTitle title="Add a bill" />
             </Header>
-            <form class={"bg-turquoise p-4 flex flex-col gap-4"}>
-                <section class={"flex flex-col bg-white p-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"What did you buy?"}</h2>
-                    <input required={"true"} class={"outline-none peer border-b py-2"} name={"name"} value={params.name.unwrap_or_default()} placeholder={"Trip Snacks, Train Tickets, Beer, ..."} />
-                    <span class={"text-xs text-[grey]"}>{"Enter a descriptive name for what was paid for."}</span>
+            <form class="bg-turquoise p-4 flex flex-col gap-4">
+                <section class="flex flex-col bg-white p-2">
+                    <h2 class="text-black font-bold text-sm">"What did you buy?"</h2>
+                    <input required="true" class="outline-none peer border-b py-2" name="name" value={params.name.unwrap_or_default()} placeholder="Trip Snacks, Train Tickets, Beer, ..." />
+                    <span class="text-xs text-[grey]">"Enter a descriptive name for what was paid for."</span>
                 </section>
-                <section class={"flex flex-col bg-white p-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"How much did it cost?"}</h2>
-                    <div class={"flex items-center"}>
-                        <span class={"w-10 h-10 text-[grey] flex items-center justify-center text-xl"}>{"€"}</span>
-                        <input required={"true"} class={"outline-none peer border-b py-2 appearance-none w-full"} name={"total"} value={params.total.map(|t| t.to_string()).unwrap_or_default()} step={"0.01"} min={"0"} type={"number"} placeholder={"0.00"} /> // TODO: Don't set 0 by default
+                <section class="flex flex-col bg-white p-2">
+                    <h2 class="text-black font-bold text-sm">"How much did it cost?"</h2>
+                    <div class="flex items-center">
+                        <span class="w-10 h-10 text-[grey] flex items-center justify-center text-xl">"€"</span>
+                        <input required="true" class="outline-none peer border-b py-2 appearance-none w-full" name="total" value={params.total.map(|t| t.to_string()).unwrap_or_default()} step="0.01" min="0" type="number" placeholder="0.00" /> // TODO: Don't set 0 by default
                     </div>
-                    <span class={"text-xs text-[grey]"}>{"Enter the total of this bill."}</span>
+                    <span class="text-xs text-[grey]">"Enter the total of this bill."</span>
                 </section>
-                <section class={"flex flex-col bg-white p-2 gap-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
-                    <button type={"submit"} formnovalidate={"true"} formmethod={"post"} formaction={format!("/{nobt_id}/bill/debtee")} class={"flex items-center hover:bg-hover cursor-pointer"}>
-                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
-                            {"person"}
+                <section class="flex flex-col bg-white p-2 gap-2">
+                    <h2 class="text-black font-bold text-sm">"Who paid?"</h2>
+                    <button type="submit" formnovalidate="true" formmethod="post" formaction={format!("/{nobt_id}/bill/debtee")} class="flex items-center hover:bg-hover cursor-pointer">
+                        <span class="w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined">
+                            "person"
                             {match params.debtee.as_deref() {
-                                Some(debtee) => rsx! {
-                                    <input class={"appearance-none"} required={"true"} type={"radio"} name={"debtee"} checked={"checked"} value={debtee} />
+                                Some(debtee) => html! {
+                                    <input class="appearance-none" required="true" type="radio" name="debtee" checked="checked" value=debtee />
                                 },
-                                None => rsx! {
-                                    <input class={"appearance-none"} required={"true"} type={"radio"} name={"debtee"} />
+                                None => html! {
+                                    <input class="appearance-none" required="true" type="radio" name="debtee" />
                                 }
                             }}
                         </span>
@@ -208,24 +206,24 @@ async fn new_bill(
                                 None => "Select a Debtee".to_owned(),
                             }}
                         </span>
-                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
-                            {"edit"}
+                        <span class="w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined">
+                            "edit"
                         </span>
                     </button>
-                    <span class={"text-xs text-[grey]"}>{"Select the person who paid this bill."}</span>
+                    <span class="text-xs text-[grey]">"Select the person who paid this bill."</span>
                 </section>
-                <section class={"flex flex-col bg-white p-2 gap-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"Who is involved?"}</h2>
-                    <button type={"submit"} formnovalidate={"true"} formmethod={"post"} formaction={format!("/{nobt_id}/bill/debtors")} class={"flex items-center hover:bg-hover cursor-pointer"}>
-                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
-                            {"group"}
+                <section class="flex flex-col bg-white p-2 gap-2">
+                    <h2 class="text-black font-bold text-sm">"Who is involved?"</h2>
+                    <button type="submit" formnovalidate="true" formmethod="post" formaction={format!("/{nobt_id}/bill/debtors")} class="flex items-center hover:bg-hover cursor-pointer">
+                        <span class="w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined">
+                            "group"
                         </span>
                         {debtors
                             .iter()
-                            .map(|d| rsx! {
-                                <input type={"hidden"} name={"debtors"} value={d}/>
+                            .map(|d| html! {
+                                <input type="hidden" name="debtors" value=d/>
                             })
-                            .collect::<Vec<_>>()}
+                            .collect_fragment()}
                         <span class={match &debtors.len() {
                             0 => "text-[grey] text-left flex-grow",
                             _ => "text-black text-left flex-grow",
@@ -236,16 +234,16 @@ async fn new_bill(
                                 num => format!("{num} persons are involved."),
                             }}
                         </span>
-                        <span class={"w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined"}>
-                            {"edit"}
+                        <span class="w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined">
+                            "edit"
                         </span>
                     </button>
-                    <span class={"text-xs text-[grey]"}>{"Select who is involved in this bill."}</span>
+                    <span class="text-xs text-[grey]">"Select who is involved in this bill."</span>
                 </section>
                 <div>
-                    <button class={"flex items-center justify-center gap-2 text-white uppercase rounded shadow px-4 py-2 bg-darkGreen"} type={"submit"} formmethod={"post"} formaction={format!("/{nobt_id}/bill/new")}>
-                        <Icon name={"check_circle"} />
-                        {"Add bill"}
+                    <button class="flex items-center justify-center gap-2 text-white uppercase rounded shadow px-4 py-2 bg-darkGreen" type="submit" formmethod="post" formaction={format!("/{nobt_id}/bill/new")}>
+                        <Icon name="check_circle" />
+                        "Add bill"
                     </button>
                 </div>
             </form>
@@ -288,53 +286,53 @@ async fn choose_bill_debtee(
         names.extend(debtors.iter().map(|s| s.to_owned()));
     }
 
-    let bill_name = params.name.as_deref();
-    let selected_debtee = params.debtee.as_deref();
-    let total = params.total.as_ref();
+    let bill_name = params.name;
+    let selected_debtee = params.debtee;
+    let total = params.total;
     let debtors = params.debtors.unwrap_or_default();
 
     Html(html! {
-        <App title={title}>
+        <App title=title>
             <Header>
                 <BackLink href={&back_link}/>
-                <HeaderTitle title={"Select debtee"} />
+                <HeaderTitle title="Select debtee" />
             </Header>
-            <div class={"bg-turquoise p-4 flex flex-col gap-4"}>
-                <section class={"flex flex-col bg-white p-2 gap-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"Who paid?"}</h2>
+            <div class="bg-turquoise p-4 flex flex-col gap-4">
+                <section class="flex flex-col bg-white p-2 gap-2">
+                    <h2 class="text-black font-bold text-sm">"Who paid?"</h2>
 
                     {names
                         .iter()
-                        .map(|debtee| {
+                        .map(|debtee| async {
                             let is_current_debtee = selected_debtee.map(|sd| &sd == debtee).unwrap_or(false);
 
-                            rsx! {
-                                <ChooseDebteeForm nobt_id={&nobt_id} name={bill_name} total={total} debtee={debtee} debtors={&debtors} is_checked={is_current_debtee} />
+                            html! {
+                                <ChooseDebteeForm nobt_id={&nobt_id} name=bill_name total=total debtee=debtee debtors=debtors is_checked=is_current_debtee />
                             }
                         })
-                        .collect::<Vec<_>>()}
+                        .collect_fragment_async().await}
                 </section>
 
-                <section class={"flex flex-col bg-white p-2 gap-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
+                <section class="flex flex-col bg-white p-2 gap-2">
+                    <h2 class="text-black font-bold text-sm">"Someone else?"</h2>
 
-                    <form method={"post"} action={format!("/{nobt_id}/bill")} class={"w-full flex items-center gap-2"}>
-                        {bill_name.map(|name| rsx! {
-                            <input type={"hidden"} name={"name"} value={name} />
-                        })}
-                        {total.map(|total| rsx! {
-                            <input type={"hidden"} name={"total"} value={total.to_string()} />
-                        })}
+                    <form method="post" action={format!("/{nobt_id}/bill")} class="w-full flex items-center gap-2">
+                        {bill_name.map(|name| html! {
+                            <input type="hidden" name="name" value=name />
+                        }).unwrap_or_default()}
+                        {total.map(|total| html! {
+                            <input type="hidden" name="total" value={total.to_string()} />
+                        }).unwrap_or_default()}
                         {debtors
                             .iter()
-                            .map(|d| rsx! {
-                                <input type={"hidden"} name={"debtors"} value={d}/>
+                            .map(|d| html! {
+                                <input type="hidden" name="debtors" value=d/>
                             })
-                            .collect::<Vec<_>>()}
-                        <input class={"outline-none border-b appearance-none w-full flex-grow p-2 truncate"} type={"text"} name={"debtee"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
-                        <button class={"flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow cursor-pointer"}>
-                            <Icon name={"person_add"} />
-                            {"Add"}
+                            .collect_fragment()}
+                        <input class="outline-none border-b appearance-none w-full flex-grow p-2 truncate" type="text" name="debtee" placeholder="Bart, Milhouse, Nelson, ..."/>
+                        <button class="flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow cursor-pointer">
+                            <Icon name="person_add" />
+                            "Add"
                         </button>
                     </form>
                 </section>
@@ -374,78 +372,78 @@ async fn choose_bill_debtors(
     let debtors = params.debtors.unwrap_or(names.clone());
 
     Html(html! {
-        <App title={title}>
+        <App title=title>
             <Header>
                 <BackLink href={&back_link}/>
-                <HeaderTitle title={"Select debtors"} />
+                <HeaderTitle title="Select debtors" />
             </Header>
-            <div class={"bg-turquoise p-4 flex flex-col gap-4"}>
-                <section class={"flex flex-col bg-white p-2 gap-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"Who is in?"}</h2>
+            <div class="bg-turquoise p-4 flex flex-col gap-4">
+                <section class="flex flex-col bg-white p-2 gap-2">
+                    <h2 class="text-black font-bold text-sm">"Who is in?"</h2>
 
-                    <form method={"post"} action={format!("/{nobt_id}/bill")}>
-                        {bill_name.map(|name| rsx! {
-                            <input type={"hidden"} name={"name"} value={name} />
+                    <form method="post" action={format!("/{nobt_id}/bill")}>
+                        {bill_name.map(|name| html! {
+                            <input type="hidden" name="name" value=name />
                         })}
-                        {selected_debtee.map(|debtee| rsx! {
-                            <input type={"hidden"} name={"debtee"} value={debtee} />
+                        {selected_debtee.map(|debtee| html! {
+                            <input type="hidden" name="debtee" value=debtee />
                         })}
-                        {total.map(|total| rsx! {
-                            <input type={"hidden"} name={"total"} value={total.to_string()} />
+                        {total.map(|total| html! {
+                            <input type="hidden" name="total" value={total.to_string()} />
                         })}
                         {names
                             .iter()
-                            .map(|d| {
+                            .map(|d| async {
                                 let id = format!("{d}_involved_checkbox");
 
-                                rsx! {
-                                    <div class={"flex items-center hover:bg-hover p-2 cursor-pointer"}>
-                                        <label class={"flex-grow flex items-center gap-2"} for={id.clone()}>
+                                html! {
+                                    <div class="flex items-center hover:bg-hover p-2 cursor-pointer">
+                                        <label class="flex-grow flex items-center gap-2" for={id.clone()}>
                                             <Avatar name={d.as_str()} />
                                             {d.as_str()}
                                         </label>
                                         {if debtors.contains(d) || debtors.is_empty() {
-                                            rsx! { <input id={id} type={"checkbox"} name={"debtors"} checked={"checked"} value={d.as_str()}/> }
+                                            html! { <input id=id type="checkbox" name="debtors" checked="checked" value={d.as_str()}/> }
                                         } else {
-                                            rsx! { <input id={id} type={"checkbox"} name={"debtors"} value={d.as_str()}/> }
+                                            html! { <input id=id type="checkbox" name="debtors" value={d.as_str()}/> }
                                         }}
                                     </div>
                                 }
                             })
-                            .collect::<Vec<_>>()}
+                            .collect_fragment_async().await}
 
-                        <div class={"flex flex-row-reverse"}>
-                            <button type={"submit"} class={"flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow w-full justify-center"}> // TODO: Make this a button component.
-                                <Icon name={"check_circle"}/>
-                                {"Set debtors"}
+                        <div class="flex flex-row-reverse">
+                            <button type="submit" class="flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow w-full justify-center"> // TODO: Make this a button component.
+                                <Icon name="check_circle"/>
+                                "Set debtors"
                             </button>
                         </div>
                     </form>
                 </section>
 
-                <section class={"flex flex-col bg-white p-2 gap-2"}>
-                    <h2 class={"text-black font-bold text-sm"}>{"Someone else?"}</h2>
+                <section class="flex flex-col bg-white p-2 gap-2">
+                    <h2 class="text-black font-bold text-sm">"Someone else?"</h2>
 
-                    <form method={"post"} action={format!("/{nobt_id}/bill/debtors")} class={"w-full flex items-center gap-2"}>
-                        {bill_name.map(|name| rsx! {
-                            <input type={"hidden"} name={"name"} value={name} />
+                    <form method="post" action={format!("/{nobt_id}/bill/debtors")} class="w-full flex items-center gap-2">
+                        {bill_name.map(|name| html! {
+                            <input type="hidden" name="name" value=name />
                         })}
-                        {selected_debtee.map(|debtee| rsx! {
-                            <input type={"hidden"} name={"debtee"} value={debtee} />
+                        {selected_debtee.map(|debtee| html! {
+                            <input type="hidden" name="debtee" value=debtee />
                         })}
-                        {total.map(|total| rsx! {
-                            <input type={"hidden"} name={"total"} value={total.to_string()} />
+                        {total.map(|total| html! {
+                            <input type="hidden" name="total" value={total.to_string()} />
                         })}
                         {debtors
                             .iter()
-                            .map(|d| rsx! {
-                                <input type={"hidden"} name={"debtors"} value={d}/>
+                            .map(|d| html! {
+                                <input type="hidden" name="debtors" value=d/>
                             })
-                            .collect::<Vec<_>>()}
-                        <input class={"outline-none border-b appearance-none w-full flex-grow p-2 truncate"} type={"text"} name={"debtors"} placeholder={"Bart, Milhouse, Nelson, ..."}/>
-                        <button class={"flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow"}>
-                            <Icon name={"person_add"} />
-                            {"Add"}
+                            .collect_fragment()}
+                        <input class="outline-none border-b appearance-none w-full flex-grow p-2 truncate" type="text" name="debtors" placeholder="Bart, Milhouse, Nelson, ..."/>
+                        <button class="flex items-center hover:bg-hover gap-2 py-2 px-4 rounded-md shadow">
+                            <Icon name="person_add" />
+                            "Add"
                         </button>
                     </form>
                 </section>
@@ -455,36 +453,36 @@ async fn choose_bill_debtors(
 }
 
 #[component]
-fn ChooseDebteeForm<'a>(
-    nobt_id: &'a str,
-    name: Option<&'a str>,
-    total: Option<&'a f64>,
-    debtee: &'a str,
-    debtors: &'a HashSet<String>,
+fn ChooseDebteeForm (
+    nobt_id: String,
+    name: Option<String>,
+    total: Option<f64>,
+    debtee: String,
+    debtors: HashSet<String>,
     is_checked: bool,
-) {
-    rsx! {
-        <form method={"post"} action={format!("/{nobt_id}/bill")} class={"w-full"}>
-            <input type={"hidden"} name={"debtee"} value={debtee} />
-            {name.map(|name| rsx! {
-                <input type={"hidden"} name={"name"} value={name} />
-            })}
-            {total.map(|total| rsx! {
-                <input type={"hidden"} name={"total"} value={total.to_string()} />
-            })}
+) -> String {
+    html! {
+        <form method="post" action={format!("/{nobt_id}/bill")} class="w-full">
+            <input type="hidden" name="debtee" value=debtee />
+            {name.map(|name| html! {
+                <input type="hidden" name="name" value=name />
+            }).unwrap_or_default()}
+            {total.map(|total| html! {
+                <input type="hidden" name="total" value={total.to_string()} />
+            }).unwrap_or_default()}
             {debtors
                 .iter()
-                .map(|d| rsx! {
-                    <input type={"hidden"} name={"debtors"} value={d}/>
+                .map(|d| html! {
+                    <input type="hidden" name="debtors" value=d/>
                 })
-                .collect::<Vec<_>>()}
-            <button class={"flex items-center hover:bg-hover gap-2 p-2 cursor-pointer w-full"}>
-                <Avatar name={debtee} />
-                <span class={"flex-grow text-left"}>{debtee}</span>
-                <span class={"flex items-center justify-center rounded-full border border-darkGrey w-3.5 h-3.5"}>
-                    {is_checked.then(|| rsx! {
-                        <span class={"block bg-turquoise rounded-full w-2 h-2"}></span>
-                    })}
+                .collect_fragment()}
+            <button class="flex items-center hover:bg-hover gap-2 p-2 cursor-pointer w-full">
+                <Avatar name=debtee />
+                <span class="flex-grow text-left">debtee</span>
+                <span class="flex items-center justify-center rounded-full border border-darkGrey w-3.5 h-3.5">
+                    {is_checked.then(|| html! {
+                        <span class="block bg-turquoise rounded-full w-2 h-2"></span>
+                    }).unwrap_or_default()}
                 </span>
             </button>
         </form>
@@ -492,34 +490,34 @@ fn ChooseDebteeForm<'a>(
 }
 
 #[component]
-fn PersonRadiobox<'a>(name: &'a str, required: bool) {
+fn PersonRadiobox(name: String, required: bool) -> String {
     let id = format!("{name}_debtee");
 
-    rsx! {
-        <div class={"flex items-center w-full gap-2 hover:bg-hover"}>
-            <label class={"flex items-center flex-grow gap-2 p-2"} for={id.clone()}>
-                <Avatar name={name} />
-                <span class={"flex-grow"}>{name}</span>
+    html! {
+        <div class="flex items-center w-full gap-2 hover:bg-hover">
+            <label class="flex items-center flex-grow gap-2 p-2" for={id.clone()}>
+                <Avatar name=name />
+                <span class="flex-grow">name</span>
             </label>
-            <div class={"p-2 flex items-center justify-center"}>
-                <input id={id} required={required.to_string()} type={"radio"} name={"debtee"} value={name} /> // TODO: Make a custom input based on brand colors
+            <div class="p-2 flex items-center justify-center">
+                <input id=id required={required.to_string()} type="radio" name="debtee" value=name /> // TODO: Make a custom input based on brand colors
             </div>
         </div>
     }
 }
 
 #[component]
-fn PersonCheckbox<'a>(name: &'a str) {
+fn PersonCheckbox(name: String) -> String {
     let id = format!("{name}_involved_checkbox");
 
-    rsx! {
-        <div class={"flex items-center w-full gap-2 hover:bg-hover"}>
-            <label class={"flex items-center flex-grow gap-2 p-2"} for={id.clone()}>
-                <Avatar name={name} />
-                <span class={"flex-grow"}>{name}</span>
+    html! {
+        <div class="flex items-center w-full gap-2 hover:bg-hover">
+            <label class="flex items-center flex-grow gap-2 p-2" for={id.clone()}>
+                <Avatar name=name />
+                <span class="flex-grow">name</span>
             </label>
-            <div class={"p-2 flex items-center justify-center"}>
-                <input id={id} checked={"true"} type={"checkbox"} name={"involved"} value={name} />  // TODO: Make a custom input based on brand colors
+            <div class="p-2 flex items-center justify-center">
+                <input id=id checked="true" type="checkbox" name="involved" value=name />  // TODO: Make a custom input based on brand colors
             </div>
         </div>
     }
@@ -554,26 +552,28 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
     ];
 
     Html(html! {
-        <App title={title}>
+        <App title=title>
             <Header>
                 <BackLink href={&nobt_url}/>
-                <HeaderTitle title={"Balances"} />
+                <HeaderTitle title="Balances" />
             </Header>
-            <div class={"bg-white p-4"}>
-                <Section title={"Balance overview"} subtitle={"The balances of all users in this Nobt."}>
+            <div class="bg-white p-4">
+                <Section title="Balance overview" subtitle="The balances of all users in this Nobt.">
                     <List>
                         {balances
                             .iter()
-                            .map(|balance| rsx! {
+                            .map(|balance| async {
+                            html! {
                                 <LinkListItem href={&balance.url}>
                                     <Avatar name={&balance.name} />
-                                    <span class={"grow flex flex-col"}>
+                                    <span class="grow flex flex-col">
                                         <span>{balance.name.as_str()}</span>
                                         <ThemedAmount currency={&currency} value={balance.amount} />
                                     </span>
                                 </LinkListItem>
-                            })
-                            .collect::<Vec<_>>()}
+                            }
+                        })
+                            .collect_fragment()}
                     </List>
                 </Section>
             </div>
@@ -605,38 +605,40 @@ async fn individual_balance(Path((nobt_id, name)): Path<(String, String)>) -> im
     );
 
     Html(html! {
-        <App title={title}>
+        <App title=title>
             <Header>
                 <BackLink href={&back_url} />
                 <HeaderTitle title={&name} />
             </Header>
-            <div class={"bg-white p-4 flex flex-col gap-4"}>
-                <Section title={"Summary"} subtitle={""}>
+            <div class="bg-white p-4 flex flex-col gap-4">
+                <Section title="Summary" subtitle="">
                     <List>
                         <ListItem>
-                            <ListItemIcon name={"info"}/>
+                            <ListItemIcon name="info"/>
                             {format!("{name} paid 2 bills ({}).", format_amount(currency, 1705.0))}
                         </ListItem>
                         <ListItem>
-                            <ListItemIcon name={"info"}/>
+                            <ListItemIcon name="info"/>
                             {format!("{name} participates in 13 of 14 bills.")}
                         </ListItem>
                     </List>
                 </Section>
-                <Section title={"Debts"} subtitle={&debts_subtitle}>
+                <Section title="Debts" subtitle={&debts_subtitle}>
                     <List>
                         {debts
                             .iter()
-                            .map(|debt| rsx! {
+                            .map(|debt| async {
+                            html! {
                                 <ListItem>
                                     <Avatar name={&debt.name} />
-                                    <span class={"grow flex flex-col"}>
+                                    <span class="grow flex flex-col">
                                         <span>{debt.name.as_str()}</span>
                                         <ThemedAmount currency={&currency} value={debt.amount} />
                                     </span>
                                 </ListItem>
-                            })
-                            .collect::<Vec<_>>()}
+                            }
+                        })
+                            .collect_fragment()}
                     </List>
                 </Section>
             </div>
@@ -667,52 +669,52 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
     ];
 
     Html(html! {
-        <App title={title}>
+        <App title=title>
             <Header>
                 <BackLink href={&nobt_url}/>
-                <HeaderTitle title={name} />
+                <HeaderTitle title=name />
             </Header>
-            <div class={"bg-white p-4 flex flex-col gap-4"}>
-                <Section title={"Debtee"} subtitle={""}>
+            <div class="bg-white p-4 flex flex-col gap-4">
+                <Section title="Debtee" subtitle="">
                     <List>
                         <ListItem>
                             <Avatar name={&debtee_name} />
                             {format!("{debtee_name} paid this bill.")}
                         </ListItem>
                         <ListItem>
-                            <ListItemIcon name={"access_time"}/>
+                            <ListItemIcon name="access_time"/>
                             {format!("Added on {added_on}.")}
                         </ListItem>
                         <ListItem>
-                            <ListItemIcon name={"credit_card"}/>
+                            <ListItemIcon name="credit_card"/>
                             {format!("The invoice total is {total}.")}
                         </ListItem>
                     </List>
                 </Section>
-                <Section title={"Debtors"} subtitle={""}>
+                <Section title="Debtors" subtitle="">
                     <List>
                         {debtors
                             .iter()
-                            .map(|debtor| rsx! {
+                            .map(|debtor| async { html! {
                                 <ListItem>
                                     <Avatar name={&debtor.name} />
-                                    <span class={"flex-grow"}>{debtor.name.as_str()}</span>
+                                    <span class="flex-grow">{debtor.name.as_str()}</span>
                                     <ThemedAmount currency={&currency} value={debtor.amount_owed} />
                                 </ListItem>
-                            })
-                            .collect::<Vec<_>>()}
+                            } })
+                            .collect_fragment()}
                     </List>
                 </Section>
-                {(!deleted).then(|| rsx! {
-                   <Section title={"Actions"} subtitle={""}>
+                {(!deleted).then(|| async { html! {
+                   <Section title="Actions" subtitle="">
                         <List>
-                            <FormListItem href={delete_url} confirm={"Deleting a bill is permanent. Proceed?"}>
-                                <ListItemIcon name={"delete"}/>
-                                {"Delete this bill"}
+                            <FormListItem href=delete_url confirm="Deleting a bill is permanent. Proceed?">
+                                <ListItemIcon name="delete"/>
+                                "Delete this bill"
                             </FormListItem>
                         </List>
                     </Section>
-                })}
+                } })}
             </div>
         </App>
     })
@@ -735,21 +737,21 @@ async fn delete_expense(Path((nobt_id, _expense_id)): Path<(String, u64)>) -> im
 async fn not_found() -> impl IntoResponse {
     Html(html! {
         <>
-            <HTML5Doctype />
-            <Head title={"Not found"} />
-            <body hx-boost={"true"} class={"bg-turquoise sm:bg-lightGrey h-screen"}>
-                <div class={"sm:pt-10"}>
-                    <div class={"bg-turquoise container mx-auto sm:shadow-lg sm:rounded-lg max-w-3xl"}>
+            <!DOCTYPE html>
+            <Head title="Not found" />
+            <body hx-boost="true" class="bg-turquoise sm:bg-lightGrey h-screen">
+                <div class="sm:pt-10">
+                    <div class="bg-turquoise container mx-auto sm:shadow-lg sm:rounded-lg max-w-3xl">
                         <Header>
-                            <h1 class={"text-xl"}>{"nobt.io"}</h1>
+                            <h1 class="text-xl">"nobt.io"</h1>
                         </Header>
-                        <div class={"p-12 flex flex-col gap-4 items-center"}>
-                            // <div class={"bg-cover h-80 w-2/3 bg-center bg-[url('/not_found.jpg')]"}>{""}</div>
+                        <div class="p-12 flex flex-col gap-4 items-center">
+                            // <div class="bg-cover h-80 w-2/3 bg-center bg-[url('/not_found.jpg')]">""</div>
 
-                            <h2 class={"text-lg w-72 text-center text-white"}>{"We looked everywhere but couldn't find this nobt."}</h2>
+                            <h2 class="text-lg w-72 text-center text-white">"We looked everywhere but couldn't find this nobt."</h2>
 
-                            <a class={"bg-white rounded-md px-4 py-2 shadow"} href={"/create"}>
-                                {"Create a new nobt"}
+                            <a class="bg-white rounded-md px-4 py-2 shadow" href="/create">
+                                "Create a new nobt"
                             </a>
                         </div>
                     </div>
@@ -783,42 +785,37 @@ struct DebtItem {
 }
 
 #[component]
-fn App<'a, C>(title: &'a str, children: C)
-where
-    C: Render,
-{
-    rsx! {
-        <>
-            <HTML5Doctype />
-            <Head title={title} />
-            <body hx-boost={"true"} hx-ext={"preload"} class={"bg-lightGrey h-screen"}>
-                <div class={"sm:pt-10"}>
-                    <div class={"container mx-auto shadow-lg rounded-lg max-w-3xl"}>
-                        {children}
-                    </div>
+fn App(title: String, children: String) -> String {
+    html! {
+        <!DOCTYPE html>
+        <Head title=title />
+        <body hx-boost="true" hx-ext="preload" class="bg-lightGrey h-screen">
+            <div class="sm:pt-10">
+                <div class="container mx-auto shadow-lg rounded-lg max-w-3xl">
+                    children
                 </div>
-            </body>
-        </>
+            </div>
+        </body>
     }
 }
 
 #[component]
-fn Head<'a>(title: &'a str) {
-    rsx! {
+fn Head(title: String) -> String {
+    html! {
         <head>
-            <title>{title}</title>
-            <meta charset={"utf-8"} />
-            <meta name={"google-site-verification"} content={"RxNEUdqyb3p6Q7WHOTY2C5hzwOFMwFUcjRFvYNFoRf0"} />
-            <meta name={"viewport"} content={"width=device-width, initial-scale=1"} />
-            <meta name={"description"} content={"Nobt.io is a free service to split bills among your friends. It is super simple and ease to use. Create a nobt, share the link with your friends and start splitting bills."} />
-            <meta name={"keywords"} content={"nobt,nobtio,bills,friends,ease,payments,settle up,split bills,money,trips,roadtrips,lunch,party"} />
-            <link href={"https://fonts.googleapis.com/css?family=Courgette|Comfortaa:700"} rel={"stylesheet"} />
-            <link href={"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0"} rel={"stylesheet"}/>
-            <link href={"/style.css"} rel={"stylesheet"}/>
-            <script src={"https://unpkg.com/htmx.org@1.9.1/dist/htmx.js"} crossorigin={"anonymous"}>{""}</script>
-            <script src={"https://unpkg.com/htmx.org/dist/ext/preload.js"} crossorigin={"anonymous"}>{""}</script>
+            <title>title</title>
+            <meta charset="utf-8" />
+            <meta name="google-site-verification" content="RxNEUdqyb3p6Q7WHOTY2C5hzwOFMwFUcjRFvYNFoRf0" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <meta name="description" content="Nobt.io is a free service to split bills among your friends. It is super simple and ease to use. Create a nobt, share the link with your friends and start splitting bills." />
+            <meta name="keywords" content="nobt,nobtio,bills,friends,ease,payments,settle up,split bills,money,trips,roadtrips,lunch,party" />
+            <link href="https://fonts.googleapis.com/css?family=Courgette|Comfortaa:700" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0" rel="stylesheet"/>
+            <link href="/style.css" rel="stylesheet"/>
+            <script src="https://unpkg.com/htmx.org@1.9.1/dist/htmx.js" crossorigin="anonymous">""</script>
+            <script src="https://unpkg.com/htmx.org/dist/ext/preload.js" crossorigin="anonymous">""</script>
             <script>
-                {raw! {
+                html! {
                     r#"
                     htmx.on('htmx:configRequest', function (event) {
                         // debugger;
@@ -849,84 +846,69 @@ fn Head<'a>(title: &'a str) {
                             event.detail.verb = formMethod;
 
                             if (formMethod === 'post') {
-                                event.detail.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                                event.detail.headers['Content-Type'] = pplication/x-www-form-urlencoded';
                             }
                         }
                     })
                     ;"#
-                }}
+                }
             </script>
         </head>
     }
 }
 
 #[component]
-fn Section<'a, C>(title: &'a str, subtitle: &'a str, children: C)
-where
-    C: Render,
-{
-    rsx! {
-        <section class={"flex flex-col gap-4"}>
-            <div class={"flex flex-col gap-2"}>
-                <h2 class={"text-darkGrey text-2xl"}>{title}</h2>
-                {(!subtitle.is_empty()).then(|| rsx! {
-                    <h3 class={"text-darkGrey text-xs"}>{subtitle}</h3>
+fn Section(title: String, subtitle: String, children: String) -> String {
+    html! {
+        <section class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+                <h2 class="text-darkGrey text-2xl">title</h2>
+                {(!subtitle.is_empty()).then(|| html! {
+                    <h3 class="text-darkGrey text-xs">subtitle</h3>
                 })}
             </div>
-            {children}
+            children
         </section>
     }
 }
 
 #[component]
-fn List<C>(children: C)
-where
-    C: Render,
-{
-    rsx! {
-        <ul class={"flex flex-col"}>
-            {children}
+fn List(children: String) -> String {
+    html! {
+        <ul class="flex flex-col">
+            children
         </ul>
     }
 }
 
 #[component]
-fn ListItem<C>(children: C)
-where
-    C: Render,
-{
-    rsx! {
-        <li class={"block flex items-center gap-4 p-2"}>
-            {children}
+fn ListItem(children: String) -> String {
+    html! {
+        <li class="block flex items-center gap-4 p-2">
+            children
         </li>
     }
 }
 
 #[component]
-fn LinkListItem<'a, C>(href: &'a str, children: C)
-where
-    C: Render,
-{
-    rsx! {
+fn LinkListItem(href: String, children: String) -> String {
+    html! {
         <li>
-            <a class={"block flex items-center gap-4 cursor-pointer hover:bg-hover p-2"} href={href} preload={"mousedown"}>
-                {children}
-                <Icon name={"chevron_right"} />
+            <a class="block flex items-center gap-4 cursor-pointer hover:bg-hover p-2" href=href preload="mousedown">
+                children
+                <Icon name="chevron_right" />
             </a>
         </li>
     }
 }
 
 #[component]
-fn FormListItem<C>(href: String, confirm: &'static str, children: C)
-where
-    C: Render,
-{
-    rsx! {
+fn FormListItem(href: String, confirm: &'static str, children: String) -> String {
+    html! {
         <li>
-            <form action={href} method={"post"} hx-confirm={confirm}>
-                <button type={"submit"} class={"block flex items-center gap-4 w-full cursor-pointer hover:bg-hover p-2"}>
-                    {children}
+            <form action=href method="post" hx-confirm=confirm>
+                <button type="submit" class="block flex items-center gap-4 w-full cursor-pointer hover:bg-hover p-2">
+                    children
                 </button>
             </form>
         </li>
@@ -934,17 +916,17 @@ where
 }
 
 #[component]
-fn Icon<'a>(name: &'a str) {
-    rsx! {
-        <span class={"material-symbols-outlined"}>{name}</span>
+fn Icon(name: String) -> String {
+    html! {
+        <span class="material-symbols-outlined">name</span>
     }
 }
 
 #[component]
-fn LinkIcon<'a>(href: &'a str, name: &'a str) {
-    rsx! {
-        <a href={href} class={"material-symbols-outlined"}>
-            {name}
+fn LinkIcon(href: String, name: String) -> String {
+    html! {
+        <a href=href class="material-symbols-outlined">
+            name
         </a>
     }
 }
@@ -954,10 +936,10 @@ fn LinkIcon<'a>(href: &'a str, name: &'a str) {
 /// In case we have JS enabled, this will simply trigger `history.back()` which takes the user back to the previous page.
 /// Without JS, we simply navigate to the desired page.
 #[component]
-fn BackLink<'a>(href: &'a str) {
-    rsx! {
-        <a class={"material-symbols-outlined"} href={href} onclick={"{ history.back(); return false; }"}> // TODO: How to use `hx-on` here?
-            {"chevron_left"}
+fn BackLink(href: String) -> String {
+    html! {
+        <a class="material-symbols-outlined" href=href onclick="{ history.back(); return false; }"> // TODO: How to use `hx-on` here?
+            "chevron_left"
         </a>
     }
 }
@@ -966,13 +948,13 @@ fn BackLink<'a>(href: &'a str) {
 ///
 /// Negative amounts will appear red.
 #[component]
-fn ThemedAmount<'a>(currency: &'a str, value: f64) {
+fn ThemedAmount(currency: String, value: f64) -> String {
     if value == 0.0 {
-        rsx! { <Amount currency={currency} value={value} classes={"text-darkGrey"}/> }
+        html! { <Amount currency=currency value=value classes="text-darkGrey"/> }
     } else if value < 0.0 {
-        rsx! { <Amount currency={currency} value={value} classes={"text-red"}/> }
+        html! { <Amount currency=currency value=value classes="text-red"/> }
     } else {
-        rsx! { <Amount currency={currency} value={value} classes={"text-green"}/> }
+        html! { <Amount currency=currency value=value classes="text-green"/> }
     }
 }
 
@@ -980,15 +962,15 @@ fn ThemedAmount<'a>(currency: &'a str, value: f64) {
 ///
 /// Negative amounts will appear red.
 #[component]
-fn Amount<'a>(currency: &'a str, value: f64, classes: &'static str) {
+fn Amount(currency: String, value: f64, classes: &'static str) -> String {
     let formatted = format_amount(currency, value);
 
-    rsx! {
-        <span class={format!("text-sm {classes}")}>{formatted}</span>
+    html! {
+        <span class={format!("text-sm {classes}")}>formatted</span>
     }
 }
 
-fn format_amount(currency: &str, value: f64) -> String {
+fn format_amount(currency: String, value: f64) -> String {
     if value == 0.0 {
         format!("{currency} 0.00")
     } else if value < 0.0 {
@@ -1001,68 +983,65 @@ fn format_amount(currency: &str, value: f64) -> String {
 }
 
 #[component]
-fn ListItemIcon<'a>(name: &'a str) {
-    rsx! {
-        <span class={"material-symbols-outlined text-darkGrey"}>{name}</span>
+fn ListItemIcon(name: String) -> String {
+    html! {
+        <span class="material-symbols-outlined text-darkGrey">name</span>
     }
 }
 
 #[component]
-fn Avatar<'a>(name: &'a str) {
+fn Avatar(name: String) -> String {
     let initials = make_initials(&name);
     let bg_color = pick_bg_color(name);
 
-    rsx! {
+    html! {
         <div class={format!("flex items-center justify-center {bg_color} text-bold rounded-full h-6 w-6 text-xs text-white leading-normal uppercase")}>
-            {initials}
+            initials
         </div>
     }
 }
 
 #[component]
-fn Header<C>(children: C)
-where
-    C: Render,
-{
-    rsx! {
-        <header class={"bg-grey text-white px-4 h-16 grid grid-cols-12 items-center"}>
-            {children}
+fn Header(children: String) -> String {
+    html! {
+        <header class="bg-grey text-white px-4 h-16 grid grid-cols-12 items-center">
+            children
         </header>
     }
 }
 
 #[component]
-fn HeaderTitle<'a>(title: &'a str) {
-    rsx! {
-        <h1 class={"text-lg col-span-10 col-start-2 uppercase font-bold text-center"}>{title}</h1>
+fn HeaderTitle(title: String) -> String {
+    html! {
+        <h1 class="text-lg col-span-10 col-start-2 uppercase font-bold text-center">title</h1>
     }
 }
 
 #[component]
-fn FAB<'a>(nobt_id: &'a str) {
-    rsx! {
-        <div class={"fixed bottom-6 right-6 transform-gpu space-y-4 text-right"}>
-            <input id={"fab-toggle"} type={"checkbox"} class={"hidden peer"}/>
-            <FABLink href={format!("/{nobt_id}/payment")} icon={"credit_card"} text={"Pay someone"} disabled={true} index={1}/>
-            <FABLink href={format!("/{nobt_id}/bill")} icon={"receipt"} text={"Add a bill"} disabled={false} index={0}/>
-            <label for={"fab-toggle"} class={"relative z-20 inline-block peer-checked:rotate-[225deg] duration-300 transition-transform cursor-pointer"}>
-                <FABIcon name={"add"} styles={"bg-turquoise text-white"}/>
+fn FAB(nobt_id: String) -> String {
+    html! {
+        <div class="fixed bottom-6 right-6 transform-gpu space-y-4 text-right">
+            <input id="fab-toggle" type="checkbox" class="hidden peer"/>
+            <FABLink href={format!("/{nobt_id}/payment")} icon="credit_card" text="Pay someone" disabled=true index={1_u32}/>
+            <FABLink href={format!("/{nobt_id}/bill")} icon="receipt" text="Add a bill" disabled=false index={0_u32}/>
+            <label for="fab-toggle" class="relative z-20 inline-block peer-checked:rotate-[225deg] duration-300 transition-transform cursor-pointer">
+                <FABIcon name="add" styles="bg-turquoise text-white"/>
             </label>
         </div>
     }
 }
 
 #[component]
-fn FABIcon<'a>(name: &'a str, styles: &'a str) {
-    rsx! {
+fn FABIcon(name: String, styles: String) -> String {
+    html! {
         <span class={format!("{styles} h-14 w-14 rounded-full flex items-center justify-center material-symbols-outlined shadow-[0_0_8px_rgba(0,0,0,0.28)]")}>
-            {name}
+            name
         </span>
     }
 }
 
 #[component]
-fn FABLink<'a>(icon: &'a str, text: &'a str, href: String, index: u32, disabled: bool) {
+fn FABLink(icon: String, text: String, href: String, index: u32, disabled: bool) -> String {
     let translate_y = match index {
         0 => "translate-y-16",
         1 => "translate-y-32",
@@ -1084,17 +1063,17 @@ fn FABLink<'a>(icon: &'a str, text: &'a str, href: String, index: u32, disabled:
     };
 
     if disabled {
-        rsx! {
-            <span class={link_styles}>
-                <FABIcon name={icon} styles={text_styles} />
-                <span class={format!("{text_styles} px-2 py-1 rounded")}>{text}</span>
+        html! {
+            <span class=link_styles>
+                <FABIcon name=icon styles=text_styles />
+                <span class={format!("{text_styles} px-2 py-1 rounded")}>text</span>
             </span>
         }
     } else {
-        rsx! {
-            <a href={href} class={link_styles}>
-                <FABIcon name={icon} styles={text_styles} />
-                <span class={format!("{text_styles} px-2 py-1 rounded")}>{text}</span>
+        html! {
+            <a href=href class=link_styles>
+                <FABIcon name=icon styles=text_styles />
+                <span class={format!("{text_styles} px-2 py-1 rounded")}>text</span>
             </a>
         }
     }
@@ -1103,7 +1082,7 @@ fn FABLink<'a>(icon: &'a str, text: &'a str, href: String, index: u32, disabled:
 /// Picks an avatar color based on the name.
 ///
 /// This function uses hashing and is thus susceptible to collisions if a nobt contains many names.
-fn pick_bg_color(name: &str) -> &'static str {
+fn pick_bg_color(name: String) -> &'static str {
     let colors = [
         "bg-[#929093]",
         "bg-[#EBDD94]",
@@ -1130,16 +1109,16 @@ fn pick_bg_color(name: &str) -> &'static str {
     colors[index % colors.len()]
 }
 
-fn make_initials(name: &str) -> Cow<'_, str> {
+fn make_initials(name: String) -> String {
     match name.split(' ').collect::<Vec<_>>().as_slice() {
-        [] => Cow::Borrowed(""), // TODO: Should never happen
+        [] => String::new(), // TODO: Should never happen
         [first] => match first.len() {
             0 => unreachable!(),
-            1 => Cow::Borrowed(&name[..1]),
-            _ => Cow::Borrowed(&name[..2]),
+            1 => String::from(&name[..1]),
+            _ => String::from(&name[..2]),
         },
-        [first, last] => Cow::Owned(format!("{}{}", &first[..1], &last[..1])),
-        [first, .., last] => Cow::Owned(format!("{}{}", &first[..1], &last[..1])),
+        [first, last] => format!("{}{}", &first[..1], &last[..1]),
+        [first, .., last] => format!("{}{}", &first[..1], &last[..1]),
     }
 }
 

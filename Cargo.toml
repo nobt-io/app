@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.22.0", features = ["full"] }
 axum = { version = "0.6.0", features = ["headers"] }
-render = { git = "https://github.com/render-rs/render.rs" }
 anyhow = "1.0.66"
+rscx = { git = "https://github.com/thomaseizinger/rscx" }
 serde = { version = "1", features = ["derive"] }
 axum-extra = { version = "0.4.1", features = ["form", "query"] }
 serde_html_form = "0.2.2"
