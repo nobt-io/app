@@ -35,6 +35,7 @@ async fn main() -> Result<()> {
         .route("/:nobt_id/bill", get(new_bill))
         .route("/:nobt_id/bill", post(new_bill))
         .route("/:nobt_id/bill/new", post(add_new_bill))
+        .route("/:nobt_id/bill/debtee", get(choose_bill_debtee))
         .route("/:nobt_id/bill/debtee", post(choose_bill_debtee))
         .route("/:nobt_id/bill/debtors", get(choose_bill_debtors))
         .route("/:nobt_id/bill/debtors", post(choose_bill_debtors))
@@ -93,7 +94,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
             </Header>
             <div class="bg-turquoise text-white p-4 flex flex-col gap-4">
                 <h2 class="text-center text-3xl">
-                    title
+                    {title}
                 </h2>
                 <ul class="flex items-center justify-center space-x-4">
                     <li class="inline-block">
@@ -479,7 +480,7 @@ fn ChooseDebteeForm(
                 .collect_fragment()}
             <button class="flex items-center hover:bg-hover gap-2 p-2 cursor-pointer w-full">
                 <Avatar name=debtee />
-                <span class="flex-grow text-left">debtee</span>
+                <span class="flex-grow text-left">{debtee}</span>
                 <span class="flex items-center justify-center rounded-full border border-darkGrey w-3.5 h-3.5">
                     {is_checked.then(|| html! {
                         <span class="block bg-turquoise rounded-full w-2 h-2"></span>
@@ -792,7 +793,7 @@ struct DebtItem {
 }
 
 #[component]
-fn App(title: String, children: String) -> String {
+fn App(title: &str, children: String) -> String {
     html! {
         <!DOCTYPE html>
         <Head title=title />
@@ -807,7 +808,7 @@ fn App(title: String, children: String) -> String {
 }
 
 #[component]
-fn Head(title: String) -> String {
+fn Head(title: &str) -> String {
     html! {
         <head>
             <title>{title}</title>
@@ -819,47 +820,8 @@ fn Head(title: String) -> String {
             <link href="https://fonts.googleapis.com/css?family=Courgette|Comfortaa:700" rel="stylesheet" />
             <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0" rel="stylesheet"/>
             <link href="/style.css" rel="stylesheet"/>
-            <script src="https://unpkg.com/htmx.org@1.9.1/dist/htmx.js" crossorigin="anonymous">""</script>
+            <script src="https://unpkg.com/htmx.org@1.9.6/dist/htmx.js" crossorigin="anonymous">""</script>
             <script src="https://unpkg.com/htmx.org/dist/ext/preload.js" crossorigin="anonymous">""</script>
-            <script>
-                html! {
-                    r#"
-                    htmx.on('htmx:configRequest', function (event) {
-                        // debugger;
-
-                        if (event.detail.elt?.nodeName !== 'FORM') {
-                            return;
-                        }
-
-                        const submitter = event.detail.triggeringEvent?.submitter;
-
-                        if (!submitter) {
-                            return;
-                        }
-
-                        // Element also has "formAction" field, but if "formaction" attribute is not filled then it has a default value.
-                        // So we specifically need to check for the existence of the attribute
-                        let formAction = submitter?.attributes?.formaction?.value;
-                        let formMethod = submitter?.attributes?.formmethod?.value?.toLowerCase();
-
-                        if (formAction) {
-                            let oldUrl = new URL(event.detail.path);
-                            oldUrl.pathname = formAction;
-
-                            event.detail.path = oldUrl.toString();
-                        }
-
-                        if (formMethod) {
-                            event.detail.verb = formMethod;
-
-                            if (formMethod === 'post') {
-                                event.detail.headers['Content-Type'] = pplication/x-www-form-urlencoded';
-                            }
-                        }
-                    })
-                    ;"#
-                }
-            </script>
         </head>
     }
 }
