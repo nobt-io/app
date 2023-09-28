@@ -697,8 +697,8 @@ dependencies = [
 
 [[package]]
 name = "rscx"
-version = "0.1.8"
-source = "git+https://github.com/thomaseizinger/rscx#175763dc299a84cae1f3d55411a91c2b671c708f"
+version = "0.1.9"
+source = "git+https://github.com/thomaseizinger/rscx?branch=feat/reference-props#5f4ede328359c02725e085d5a60e8fab9c070c22"
 dependencies = [
  "async-trait",
  "futures",
@@ -710,8 +710,8 @@ dependencies = [
 
 [[package]]
 name = "rscx-macros"
-version = "0.1.8"
-source = "git+https://github.com/thomaseizinger/rscx#175763dc299a84cae1f3d55411a91c2b671c708f"
+version = "0.1.9"
+source = "git+https://github.com/thomaseizinger/rscx?branch=feat/reference-props#5f4ede328359c02725e085d5a60e8fab9c070c22"
 dependencies = [
  "convert_case",
  "html-escape",

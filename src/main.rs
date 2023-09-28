@@ -5,11 +5,11 @@ use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
 use axum_extra::extract::Form;
+use rscx::{component, html, CollectFragment, CollectFragmentAsync, EscapeAttribute};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
-use rscx::{component, html, EscapeAttribute, CollectFragmentAsync, CollectFragment};
 
 use responses::Css;
 use responses::Jpeg;
@@ -105,7 +105,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                     <li class="inline-block">
                         <div class="flex items-center gap-2 text-sm">
                             <Icon name="group" />
-                            num_participants
+                            {num_participants}
                         </div>
                     </li>
                 </ul>
@@ -125,11 +125,11 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                             };
 
                             html! {
-                                <LinkListItem href={&expense.url}>
+                                <LinkListItem href=&expense.url>
                                     <ListItemIcon name="receipt"/>
                                     <span class={classes}>
                                         <span>{expense.description.as_str()}</span>
-                                        <Amount currency=currency value={expense.amount} classes="text-darkGrey"/>
+                                        <Amount currency=currency value=expense.amount classes="text-darkGrey"/>
                                     </span>
                                 </LinkListItem>
                             }
@@ -137,7 +137,7 @@ async fn nobt(Path(nobt_id): Path<String>) -> impl IntoResponse {
                         .collect_fragment_async().await}
                 </List>
             </div>
-            <FAB nobt_id={&nobt_id}/>
+            <FAB nobt_id=&nobt_id/>
         </App>
     })
 }
@@ -166,7 +166,7 @@ async fn new_bill(
     Html(html! {
         <App title=title>
             <Header>
-                <BackLink href={&nobt_url}/>
+                <BackLink href=&nobt_url/>
                 <HeaderTitle title="Add a bill" />
             </Header>
             <form class="bg-turquoise p-4 flex flex-col gap-4">
@@ -286,15 +286,16 @@ async fn choose_bill_debtee(
         names.extend(debtors.iter().map(|s| s.to_owned()));
     }
 
-    let bill_name = params.name;
-    let selected_debtee = params.debtee;
+    let nobt_id = nobt_id.as_str();
+    let bill_name = params.name.as_deref();
+    let selected_debtee = params.debtee.as_deref();
     let total = params.total;
-    let debtors = params.debtors.unwrap_or_default();
+    let debtors = &params.debtors.unwrap_or_default();
 
     Html(html! {
         <App title=title>
             <Header>
-                <BackLink href={&back_link}/>
+                <BackLink href=&back_link/>
                 <HeaderTitle title="Select debtee" />
             </Header>
             <div class="bg-turquoise p-4 flex flex-col gap-4">
@@ -303,11 +304,11 @@ async fn choose_bill_debtee(
 
                     {names
                         .iter()
-                        .map(|debtee| async {
-                            let is_current_debtee = selected_debtee.map(|sd| &sd == debtee).unwrap_or(false);
+                        .map(|debtee| async move {
+                            let is_current_debtee = selected_debtee.map(|sd| sd == debtee).unwrap_or(false);
 
                             html! {
-                                <ChooseDebteeForm nobt_id={&nobt_id} name=bill_name total=total debtee=debtee debtors=debtors is_checked=is_current_debtee />
+                                <ChooseDebteeForm nobt_id=nobt_id name=bill_name total=total debtee=debtee.as_str() debtors=debtors is_checked=is_current_debtee />
                             }
                         })
                         .collect_fragment_async().await}
@@ -369,12 +370,12 @@ async fn choose_bill_debtors(
     let bill_name = params.name.as_deref();
     let selected_debtee = params.debtee.as_deref();
     let total = params.total.as_ref();
-    let debtors = params.debtors.unwrap_or(names.clone());
+    let debtors = &params.debtors.unwrap_or(names.clone());
 
     Html(html! {
         <App title=title>
             <Header>
-                <BackLink href={&back_link}/>
+                <BackLink href=&back_link/>
                 <HeaderTitle title="Select debtors" />
             </Header>
             <div class="bg-turquoise p-4 flex flex-col gap-4">
@@ -384,22 +385,22 @@ async fn choose_bill_debtors(
                     <form method="post" action={format!("/{nobt_id}/bill")}>
                         {bill_name.map(|name| html! {
                             <input type="hidden" name="name" value=name />
-                        })}
+                        }).unwrap_or_default()}
                         {selected_debtee.map(|debtee| html! {
                             <input type="hidden" name="debtee" value=debtee />
-                        })}
+                        }).unwrap_or_default()}
                         {total.map(|total| html! {
                             <input type="hidden" name="total" value={total.to_string()} />
-                        })}
+                        }).unwrap_or_default()}
                         {names
                             .iter()
-                            .map(|d| async {
+                            .map(|d| async move {
                                 let id = format!("{d}_involved_checkbox");
 
                                 html! {
                                     <div class="flex items-center hover:bg-hover p-2 cursor-pointer">
                                         <label class="flex-grow flex items-center gap-2" for={id.clone()}>
-                                            <Avatar name={d.as_str()} />
+                                            <Avatar name=d.as_str() />
                                             {d.as_str()}
                                         </label>
                                         {if debtors.contains(d) || debtors.is_empty() {
@@ -427,13 +428,13 @@ async fn choose_bill_debtors(
                     <form method="post" action={format!("/{nobt_id}/bill/debtors")} class="w-full flex items-center gap-2">
                         {bill_name.map(|name| html! {
                             <input type="hidden" name="name" value=name />
-                        })}
+                        }).unwrap_or_default()}
                         {selected_debtee.map(|debtee| html! {
                             <input type="hidden" name="debtee" value=debtee />
-                        })}
+                        }).unwrap_or_default()}
                         {total.map(|total| html! {
                             <input type="hidden" name="total" value={total.to_string()} />
-                        })}
+                        }).unwrap_or_default()}
                         {debtors
                             .iter()
                             .map(|d| html! {
@@ -453,17 +454,17 @@ async fn choose_bill_debtors(
 }
 
 #[component]
-fn ChooseDebteeForm (
-    nobt_id: String,
-    name: Option<String>,
+fn ChooseDebteeForm(
+    nobt_id: &str,
+    name: Option<&'a str>,
     total: Option<f64>,
-    debtee: String,
-    debtors: HashSet<String>,
+    debtee: &str,
+    debtors: &HashSet<String>,
     is_checked: bool,
 ) -> String {
     html! {
         <form method="post" action={format!("/{nobt_id}/bill")} class="w-full">
-            <input type="hidden" name="debtee" value=debtee />
+            <input type="hidden" name="debtee" value=&debtee />
             {name.map(|name| html! {
                 <input type="hidden" name="name" value=name />
             }).unwrap_or_default()}
@@ -489,43 +490,43 @@ fn ChooseDebteeForm (
     }
 }
 
-#[component]
-fn PersonRadiobox(name: String, required: bool) -> String {
-    let id = format!("{name}_debtee");
+// #[component]
+// fn PersonRadiobox(name: &str, required: bool) -> String {
+//     let id = format!("{name}_debtee");
+//
+//     html! {
+//         <div class="flex items-center w-full gap-2 hover:bg-hover">
+//             <label class="flex items-center flex-grow gap-2 p-2" for={id.clone()}>
+//                 <Avatar name=name />
+//                 <span class="flex-grow">{name}</span>
+//             </label>
+//             <div class="p-2 flex items-center justify-center">
+//                 <input id=id required={required.to_string()} type="radio" name="debtee" value=name /> // TODO: Make a custom input based on brand colors
+//             </div>
+//         </div>
+//     }
+// }
 
-    html! {
-        <div class="flex items-center w-full gap-2 hover:bg-hover">
-            <label class="flex items-center flex-grow gap-2 p-2" for={id.clone()}>
-                <Avatar name=name />
-                <span class="flex-grow">name</span>
-            </label>
-            <div class="p-2 flex items-center justify-center">
-                <input id=id required={required.to_string()} type="radio" name="debtee" value=name /> // TODO: Make a custom input based on brand colors
-            </div>
-        </div>
-    }
-}
-
-#[component]
-fn PersonCheckbox(name: String) -> String {
-    let id = format!("{name}_involved_checkbox");
-
-    html! {
-        <div class="flex items-center w-full gap-2 hover:bg-hover">
-            <label class="flex items-center flex-grow gap-2 p-2" for={id.clone()}>
-                <Avatar name=name />
-                <span class="flex-grow">name</span>
-            </label>
-            <div class="p-2 flex items-center justify-center">
-                <input id=id checked="true" type="checkbox" name="involved" value=name />  // TODO: Make a custom input based on brand colors
-            </div>
-        </div>
-    }
-}
+// #[component]
+// fn PersonCheckbox(name: &str) -> String {
+//     let id = format!("{name}_involved_checkbox");
+//
+//     html! {
+//         <div class="flex items-center w-full gap-2 hover:bg-hover">
+//             <label class="flex items-center flex-grow gap-2 p-2" for={id.clone()}>
+//                 <Avatar name=name />
+//                 <span class="flex-grow">{name}</span>
+//             </label>
+//             <div class="p-2 flex items-center justify-center">
+//                 <input id=id checked="true" type="checkbox" name="involved" value=name />  // TODO: Make a custom input based on brand colors
+//             </div>
+//         </div>
+//     }
+// }
 
 async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
     let title = "Swedish Shenanigans";
-    let currency = "EUR".to_owned();
+    let currency = "EUR";
     let nobt_url = format!("/{nobt_id}");
 
     let balances = vec![
@@ -554,7 +555,7 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
     Html(html! {
         <App title=title>
             <Header>
-                <BackLink href={&nobt_url}/>
+                <BackLink href=&nobt_url/>
                 <HeaderTitle title="Balances" />
             </Header>
             <div class="bg-white p-4">
@@ -563,17 +564,17 @@ async fn balances(Path(nobt_id): Path<String>) -> impl IntoResponse {
                         {balances
                             .iter()
                             .map(|balance| async {
-                            html! {
-                                <LinkListItem href={&balance.url}>
-                                    <Avatar name={&balance.name} />
-                                    <span class="grow flex flex-col">
-                                        <span>{balance.name.as_str()}</span>
-                                        <ThemedAmount currency={&currency} value={balance.amount} />
-                                    </span>
-                                </LinkListItem>
-                            }
-                        })
-                            .collect_fragment()}
+                                html! {
+                                    <LinkListItem href=&balance.url>
+                                        <Avatar name=&balance.name />
+                                        <span class="grow flex flex-col">
+                                            <span>{balance.name.as_str()}</span>
+                                            <ThemedAmount currency=currency value=balance.amount />
+                                        </span>
+                                    </LinkListItem>
+                                }
+                            })
+                            .collect_fragment_async().await}
                     </List>
                 </Section>
             </div>
@@ -607,8 +608,8 @@ async fn individual_balance(Path((nobt_id, name)): Path<(String, String)>) -> im
     Html(html! {
         <App title=title>
             <Header>
-                <BackLink href={&back_url} />
-                <HeaderTitle title={&name} />
+                <BackLink href=&back_url />
+                <HeaderTitle title=&name />
             </Header>
             <div class="bg-white p-4 flex flex-col gap-4">
                 <Section title="Summary" subtitle="">
@@ -623,22 +624,22 @@ async fn individual_balance(Path((nobt_id, name)): Path<(String, String)>) -> im
                         </ListItem>
                     </List>
                 </Section>
-                <Section title="Debts" subtitle={&debts_subtitle}>
+                <Section title="Debts" subtitle=&debts_subtitle>
                     <List>
                         {debts
                             .iter()
                             .map(|debt| async {
                             html! {
                                 <ListItem>
-                                    <Avatar name={&debt.name} />
+                                    <Avatar name=&debt.name />
                                     <span class="grow flex flex-col">
                                         <span>{debt.name.as_str()}</span>
-                                        <ThemedAmount currency={&currency} value={debt.amount} />
+                                        <ThemedAmount currency=currency value=debt.amount />
                                     </span>
                                 </ListItem>
                             }
                         })
-                            .collect_fragment()}
+                            .collect_fragment_async().await}
                     </List>
                 </Section>
             </div>
@@ -653,7 +654,7 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
     let deleted = false;
     let delete_url = format!("/{nobt_id}/{expense_id}/delete");
     let debtee_name = "Thomas".to_owned();
-    let currency = "EUR".to_owned();
+    let currency = "EUR";
     let added_on = "28 August 2022".to_owned();
     let total = "EUR 39.00".to_owned();
 
@@ -671,14 +672,14 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
     Html(html! {
         <App title=title>
             <Header>
-                <BackLink href={&nobt_url}/>
+                <BackLink href=&nobt_url/>
                 <HeaderTitle title=name />
             </Header>
             <div class="bg-white p-4 flex flex-col gap-4">
                 <Section title="Debtee" subtitle="">
                     <List>
                         <ListItem>
-                            <Avatar name={&debtee_name} />
+                            <Avatar name=&debtee_name />
                             {format!("{debtee_name} paid this bill.")}
                         </ListItem>
                         <ListItem>
@@ -697,24 +698,30 @@ async fn expense(Path((nobt_id, expense_id)): Path<(String, u64)>) -> impl IntoR
                             .iter()
                             .map(|debtor| async { html! {
                                 <ListItem>
-                                    <Avatar name={&debtor.name} />
+                                    <Avatar name=&debtor.name />
                                     <span class="flex-grow">{debtor.name.as_str()}</span>
-                                    <ThemedAmount currency={&currency} value={debtor.amount_owed} />
+                                    <ThemedAmount currency=currency value=debtor.amount_owed />
                                 </ListItem>
                             } })
-                            .collect_fragment()}
+                            .collect_fragment_async().await}
                     </List>
                 </Section>
-                {(!deleted).then(|| async { html! {
-                   <Section title="Actions" subtitle="">
-                        <List>
-                            <FormListItem href=delete_url confirm="Deleting a bill is permanent. Proceed?">
-                                <ListItemIcon name="delete"/>
-                                "Delete this bill"
-                            </FormListItem>
-                        </List>
-                    </Section>
-                } })}
+                {
+                    if !deleted {
+                        html! {
+                           <Section title="Actions" subtitle="">
+                                <List>
+                                    <FormListItem href=delete_url confirm="Deleting a bill is permanent. Proceed?">
+                                        <ListItemIcon name="delete"/>
+                                        "Delete this bill"
+                                    </FormListItem>
+                                </List>
+                            </Section>
+                        }
+                    } else {
+                        html! { }
+                    }
+                }
             </div>
         </App>
     })
@@ -792,7 +799,7 @@ fn App(title: String, children: String) -> String {
         <body hx-boost="true" hx-ext="preload" class="bg-lightGrey h-screen">
             <div class="sm:pt-10">
                 <div class="container mx-auto shadow-lg rounded-lg max-w-3xl">
-                    children
+                    {children}
                 </div>
             </div>
         </body>
@@ -803,7 +810,7 @@ fn App(title: String, children: String) -> String {
 fn Head(title: String) -> String {
     html! {
         <head>
-            <title>title</title>
+            <title>{title}</title>
             <meta charset="utf-8" />
             <meta name="google-site-verification" content="RxNEUdqyb3p6Q7WHOTY2C5hzwOFMwFUcjRFvYNFoRf0" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -862,12 +869,12 @@ fn Section(title: String, subtitle: String, children: String) -> String {
     html! {
         <section class="flex flex-col gap-4">
             <div class="flex flex-col gap-2">
-                <h2 class="text-darkGrey text-2xl">title</h2>
+                <h2 class="text-darkGrey text-2xl">{title}</h2>
                 {(!subtitle.is_empty()).then(|| html! {
                     <h3 class="text-darkGrey text-xs">subtitle</h3>
-                })}
+                }).unwrap_or_default()}
             </div>
-            children
+            {children}
         </section>
     }
 }
@@ -876,7 +883,7 @@ fn Section(title: String, subtitle: String, children: String) -> String {
 fn List(children: String) -> String {
     html! {
         <ul class="flex flex-col">
-            children
+            {children}
         </ul>
     }
 }
@@ -885,7 +892,7 @@ fn List(children: String) -> String {
 fn ListItem(children: String) -> String {
     html! {
         <li class="block flex items-center gap-4 p-2">
-            children
+            {children}
         </li>
     }
 }
@@ -895,7 +902,7 @@ fn LinkListItem(href: String, children: String) -> String {
     html! {
         <li>
             <a class="block flex items-center gap-4 cursor-pointer hover:bg-hover p-2" href=href preload="mousedown">
-                children
+                {children}
                 <Icon name="chevron_right" />
             </a>
         </li>
@@ -908,7 +915,7 @@ fn FormListItem(href: String, confirm: &'static str, children: String) -> String
         <li>
             <form action=href method="post" hx-confirm=confirm>
                 <button type="submit" class="block flex items-center gap-4 w-full cursor-pointer hover:bg-hover p-2">
-                    children
+                    {children}
                 </button>
             </form>
         </li>
@@ -918,16 +925,7 @@ fn FormListItem(href: String, confirm: &'static str, children: String) -> String
 #[component]
 fn Icon(name: String) -> String {
     html! {
-        <span class="material-symbols-outlined">name</span>
-    }
-}
-
-#[component]
-fn LinkIcon(href: String, name: String) -> String {
-    html! {
-        <a href=href class="material-symbols-outlined">
-            name
-        </a>
+        <span class="material-symbols-outlined">{name}</span>
     }
 }
 
@@ -948,7 +946,7 @@ fn BackLink(href: String) -> String {
 ///
 /// Negative amounts will appear red.
 #[component]
-fn ThemedAmount(currency: String, value: f64) -> String {
+fn ThemedAmount(currency: &str, value: f64) -> String {
     if value == 0.0 {
         html! { <Amount currency=currency value=value classes="text-darkGrey"/> }
     } else if value < 0.0 {
@@ -962,15 +960,15 @@ fn ThemedAmount(currency: String, value: f64) -> String {
 ///
 /// Negative amounts will appear red.
 #[component]
-fn Amount(currency: String, value: f64, classes: &'static str) -> String {
+fn Amount(currency: &str, value: f64, classes: &'static str) -> String {
     let formatted = format_amount(currency, value);
 
     html! {
-        <span class={format!("text-sm {classes}")}>formatted</span>
+        <span class={format!("text-sm {classes}")}>{formatted}</span>
     }
 }
 
-fn format_amount(currency: String, value: f64) -> String {
+fn format_amount(currency: &str, value: f64) -> String {
     if value == 0.0 {
         format!("{currency} 0.00")
     } else if value < 0.0 {
@@ -985,18 +983,18 @@ fn format_amount(currency: String, value: f64) -> String {
 #[component]
 fn ListItemIcon(name: String) -> String {
     html! {
-        <span class="material-symbols-outlined text-darkGrey">name</span>
+        <span class="material-symbols-outlined text-darkGrey">{name}</span>
     }
 }
 
 #[component]
 fn Avatar(name: String) -> String {
-    let initials = make_initials(&name);
+    let initials = make_initials(name.clone());
     let bg_color = pick_bg_color(name);
 
     html! {
         <div class={format!("flex items-center justify-center {bg_color} text-bold rounded-full h-6 w-6 text-xs text-white leading-normal uppercase")}>
-            initials
+            {initials}
         </div>
     }
 }
@@ -1005,7 +1003,7 @@ fn Avatar(name: String) -> String {
 fn Header(children: String) -> String {
     html! {
         <header class="bg-grey text-white px-4 h-16 grid grid-cols-12 items-center">
-            children
+            {children}
         </header>
     }
 }
@@ -1013,7 +1011,7 @@ fn Header(children: String) -> String {
 #[component]
 fn HeaderTitle(title: String) -> String {
     html! {
-        <h1 class="text-lg col-span-10 col-start-2 uppercase font-bold text-center">title</h1>
+        <h1 class="text-lg col-span-10 col-start-2 uppercase font-bold text-center">{title}</h1>
     }
 }
 
@@ -1022,8 +1020,8 @@ fn FAB(nobt_id: String) -> String {
     html! {
         <div class="fixed bottom-6 right-6 transform-gpu space-y-4 text-right">
             <input id="fab-toggle" type="checkbox" class="hidden peer"/>
-            <FABLink href={format!("/{nobt_id}/payment")} icon="credit_card" text="Pay someone" disabled=true index={1_u32}/>
-            <FABLink href={format!("/{nobt_id}/bill")} icon="receipt" text="Add a bill" disabled=false index={0_u32}/>
+            <FABLink href=format!("/{nobt_id}/payment") icon="credit_card" text="Pay someone" disabled=true index=1_u32/>
+            <FABLink href=format!("/{nobt_id}/bill") icon="receipt" text="Add a bill" disabled=false index=0_u32/>
             <label for="fab-toggle" class="relative z-20 inline-block peer-checked:rotate-[225deg] duration-300 transition-transform cursor-pointer">
                 <FABIcon name="add" styles="bg-turquoise text-white"/>
             </label>
@@ -1035,7 +1033,7 @@ fn FAB(nobt_id: String) -> String {
 fn FABIcon(name: String, styles: String) -> String {
     html! {
         <span class={format!("{styles} h-14 w-14 rounded-full flex items-center justify-center material-symbols-outlined shadow-[0_0_8px_rgba(0,0,0,0.28)]")}>
-            name
+            {name}
         </span>
     }
 }
@@ -1066,14 +1064,14 @@ fn FABLink(icon: String, text: String, href: String, index: u32, disabled: bool)
         html! {
             <span class=link_styles>
                 <FABIcon name=icon styles=text_styles />
-                <span class={format!("{text_styles} px-2 py-1 rounded")}>text</span>
+                <span class={format!("{text_styles} px-2 py-1 rounded")}>{text}</span>
             </span>
         }
     } else {
         html! {
             <a href=href class=link_styles>
                 <FABIcon name=icon styles=text_styles />
-                <span class={format!("{text_styles} px-2 py-1 rounded")}>text</span>
+                <span class={format!("{text_styles} px-2 py-1 rounded")}>{text}</span>
             </a>
         }
     }
