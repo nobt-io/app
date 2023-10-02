@@ -6,3 +6,4 @@
     - Prevent bad input with JS
     - Implement basic error message by backend
     - Use inline validation: https://htmx.org/examples/inline-validation/
+- Consider switching to rocket for typed URIs
