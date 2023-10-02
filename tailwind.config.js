@@ -22,8 +22,9 @@ module.exports = {
         black12: 'rgba(0, 0, 0, 0.12)'
       },
       fontFamily: {
-        body: ['"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"],
-        header: ["Comfortaa"]
+        sans: ['"Helvetica Neue"', "Helvetica", "Arial"],
+        header: ["Comfortaa"],
+        handWritten: ['Courgette, cursive']
       },
       scale: {
         '200': '1.75'

@@ -7,6 +7,6 @@ fn main() {
         .output()
         .unwrap();
 
-    println!("cargo:rerun-if-changed=src/main.rs");
+    println!("cargo:rerun-if-changed=src");
     println!("cargo:rerun-if-changed=tailwind.config.js");
 }

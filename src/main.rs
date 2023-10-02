@@ -5,7 +5,7 @@ use axum::routing::get;
 use axum::routing::post;
 use axum::Router;
 use axum_extra::extract::Form;
-use rscx::{component, html, CollectFragment, CollectFragmentAsync, EscapeAttribute};
+use rscx::{CollectFragment, CollectFragmentAsync, component, EscapeAttribute, html};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
@@ -13,13 +13,21 @@ use std::net::SocketAddr;
 
 use responses::Css;
 use responses::Jpeg;
+use crate::responses::{Javascript, Png};
+use crate::components::Head;
 
 mod headers;
 mod responses;
+mod landing_page;
+mod components;
 
 const STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
+const TEAM_JS: &str = include_str!("../team.js");
 const NOT_FOUND_IMAGE: &[u8] = include_bytes!("../stock-photo-stack-424916446.jpg");
 const LANDING_PAGE_BACKGROUND_IMAGE: &[u8] = include_bytes!("../landing_page_background.jpg");
+const DAVID_IMAGE: &[u8] = include_bytes!("../david.png");
+const THOMAS_IMAGE: &[u8] = include_bytes!("../thomas.png");
+const MATTHIAS_IMAGE: &[u8] = include_bytes!("../matthias.png");
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,9 +38,13 @@ async fn main() -> Result<()> {
         .context("failed to parse port")?;
 
     let app = Router::new()
-        .route("/", get(index))
+        .route("/", get(landing_page::index))
         .route("/style.css", get(|| async { Css(STYLES) }))
+        .route("/team.js", get(|| async { Javascript(TEAM_JS) }))
         .route("/not_found.jpg", get(|| async { Jpeg(NOT_FOUND_IMAGE) }))
+        .route("/david.png", get(|| async { Png(DAVID_IMAGE) }))
+        .route("/thomas.png", get(|| async { Png(THOMAS_IMAGE) }))
+        .route("/matthias.png", get(|| async { Png(MATTHIAS_IMAGE) }))
         .route("/landing_page_background.jpg", get(|| async { Jpeg(LANDING_PAGE_BACKGROUND_IMAGE) }))
         .route("/:nobt_id", get(nobt))
         .route("/:nobt_id/bill", get(new_bill))
@@ -53,55 +65,6 @@ async fn main() -> Result<()> {
         .await?;
 
     Ok(())
-}
-
-async fn index() -> impl IntoResponse {
-    Html(html! {
-        <!DOCTYPE html>
-        <Head title="nobt.io: Split your bills with ease" />
-        <body hx-boost="true" hx-ext="preload">
-            <header class="bg-transparent fixed top-0 w-full text-white p-5"> // TODO: Perhaps make this change background on scroll.
-                <nav class="flex">
-                    <div class="grow">
-                        <a class="p-4" href="/">nobt.io</a>
-                    </div>
-                    <div class="text-right">
-                        // TODO: Add icons here
-                        <a class="p-4" href="#about">About</a>
-                        <a class="p-4" href="#features">Features</a>
-                        <a class="p-4" href="#team">Team</a>
-                    </div>
-                </nav>
-            </header>
-
-            <section class="h-screen bg-landing-page bg-cover bg-center flex items-center justify-center sm:grid grid-cols-12">
-                <div class="col-span-7 text-right p-10 text-white">
-                    <h1 class="text-4xl font-bold">split your bills</h1>
-                    <h2 class="text-3xl mt-4 mb-6">with ease</h2>
-                    <a class="bg-transparent hover:bg-darkGreen hover:border-darkGreen px-6 py-3 rounded-full text-md border-white border-2 uppercase" href="/create">Get started - Create a Nobt</a>
-                </div>
-                <div class="col-span-5">
-
-                </div>
-            </section>
-
-            <section id="about">
-            </section>
-
-            <section id="features">
-            </section>
-
-            <section id="team">
-            </section>
-
-            // Add icons here
-            <footer>
-                <a href="mailto:hello@nobt.io">Contact Us</a>
-                <a href="https://twitter.com/nobtio">Twitter</a>
-                <a href="https://github.com/nobt-io">GitHub</a>
-            </footer>
-        </body>
-    })
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -237,7 +200,7 @@ async fn new_bill(
                     <span class="text-xs text-[grey]">"Enter the total of this bill."</span>
                 </section>
                 <section class="flex flex-col bg-white p-2 gap-2">
-                    <h2 class="text-black font-bold text-sm">"Who paid?"</h2>
+                        <h2 class="text-black font-bold text-sm">"Who paid?"</h2>
                     <button type="submit" formnovalidate="true" formmethod="post" formaction={format!("/{nobt_id}/bill/debtee")} class="flex items-center hover:bg-hover cursor-pointer">
                         <span class="w-10 h-10 flex items-center justify-center text-xl text-[grey] material-symbols-outlined">
                             "person"
@@ -798,7 +761,9 @@ async fn not_found() -> impl IntoResponse {
     Html(html! {
         <>
             <!DOCTYPE html>
-            <Head title="Not found" />
+            <Head title="Not found">
+                <></>
+            </Head>
             <body hx-boost="true" class="bg-turquoise sm:bg-lightGrey h-screen">
                 <div class="sm:pt-10">
                     <div class="bg-turquoise container mx-auto sm:shadow-lg sm:rounded-lg max-w-3xl">
@@ -848,7 +813,9 @@ struct DebtItem {
 fn App(title: &str, children: String) -> String {
     html! {
         <!DOCTYPE html>
-        <Head title=title />
+        <Head title=title>
+            <></>
+        </Head>
         <body hx-boost="true" hx-ext="preload" class="bg-lightGrey h-screen">
             <div class="sm:pt-10">
                 <div class="container mx-auto shadow-lg rounded-lg max-w-3xl">
@@ -856,25 +823,6 @@ fn App(title: &str, children: String) -> String {
                 </div>
             </div>
         </body>
-    }
-}
-
-#[component]
-fn Head(title: &str) -> String {
-    html! {
-        <head>
-            <title>{title}</title>
-            <meta charset="utf-8" />
-            <meta name="google-site-verification" content="RxNEUdqyb3p6Q7WHOTY2C5hzwOFMwFUcjRFvYNFoRf0" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <meta name="description" content="Nobt.io is a free service to split bills among your friends. It is super simple and ease to use. Create a nobt, share the link with your friends and start splitting bills." />
-            <meta name="keywords" content="nobt,nobtio,bills,friends,ease,payments,settle up,split bills,money,trips,roadtrips,lunch,party" />
-            <link href="https://fonts.googleapis.com/css?family=Courgette|Comfortaa:700" rel="stylesheet" />
-            <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,500,1,0" rel="stylesheet"/>
-            <link href="/style.css" rel="stylesheet"/>
-            <script src="https://unpkg.com/htmx.org@1.9.6/dist/htmx.js" crossorigin="anonymous">""</script>
-            <script src="https://unpkg.com/htmx.org/dist/ext/preload.js" crossorigin="anonymous">""</script>
-        </head>
     }
 }
 
