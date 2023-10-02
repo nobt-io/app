@@ -5,11 +5,14 @@ use crate::components::Head;
 const NBSP: &str = "\u{00a0}";
 
 pub async fn index() -> impl IntoResponse {
+    const HEADER_SCROLLED_SCRIPT: &str = include_str!("../assets/header-scrolled.js");
+
     Html(html! {
         <!DOCTYPE html>
         <Head title="nobt.io: Split your bills with ease" />
         <body hx-boost="true" hx-ext="preload">
-            <header class="bg-transparent fixed top-0 w-full text-white p-5"> // TODO: Perhaps make this change background on scroll.
+            <script>{HEADER_SCROLLED_SCRIPT}</script>
+            <header class="bg-transparent fixed top-0 w-full text-white p-5 data-[scrolled=true]:bg-grey">
                 <nav class="flex">
                     <div class="grow">
                         <a class="p-4" href="/">nobt.io</a>
@@ -107,7 +110,7 @@ fn TeamMember(name: &str, github: &str, linked_in: &str, homepage: &str) -> Stri
     const TEAM_SCRIPT: &str = include_str!("../assets/team.js");
 
     html! {
-        <script>{TEAM_SCRIPT}</script>
+        <script>{TEAM_SCRIPT}</script> // TODO: This doesn't work when restoring a page from history.
 
         <div data-team-member=name class=format!("group m-2 inline-block h-[200px] w-[200px] bg-{}", name.to_lowercase())>
             <div class="invisible group-hover:visible bg-black opacity-80 justify-center w-full h-full text-white flex flex-col gap-4">
