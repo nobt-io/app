@@ -13,7 +13,7 @@ use std::net::SocketAddr;
 
 use responses::Css;
 use responses::Jpeg;
-use crate::responses::{Javascript, Png};
+use crate::responses::{Png};
 use crate::components::Head;
 
 mod headers;
@@ -22,7 +22,6 @@ mod landing_page;
 mod components;
 
 const STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
-const TEAM_JS: &str = include_str!("../assets/team.js");
 const NOT_FOUND_IMAGE: &[u8] = include_bytes!("../assets/stock-photo-stack-424916446.jpg");
 const LANDING_PAGE_BACKGROUND_IMAGE: &[u8] = include_bytes!("../assets/landing_page_background.jpg");
 const DAVID_IMAGE: &[u8] = include_bytes!("../assets/david.png");
@@ -40,7 +39,6 @@ async fn main() -> Result<()> {
     let app = Router::new()
         .route("/", get(landing_page::index))
         .route("/style.css", get(|| async { Css(STYLES) }))
-        .route("/team.js", get(|| async { Javascript(TEAM_JS) }))
         .route("/not_found.jpg", get(|| async { Jpeg(NOT_FOUND_IMAGE) }))
         .route("/david.png", get(|| async { Png(DAVID_IMAGE) }))
         .route("/thomas.png", get(|| async { Png(THOMAS_IMAGE) }))
@@ -761,9 +759,7 @@ async fn not_found() -> impl IntoResponse {
     Html(html! {
         <>
             <!DOCTYPE html>
-            <Head title="Not found">
-                <></>
-            </Head>
+            <Head title="Not found" />
             <body hx-boost="true" class="bg-turquoise sm:bg-lightGrey h-screen">
                 <div class="sm:pt-10">
                     <div class="bg-turquoise container mx-auto sm:shadow-lg sm:rounded-lg max-w-3xl">
@@ -813,9 +809,7 @@ struct DebtItem {
 fn App(title: &str, children: String) -> String {
     html! {
         <!DOCTYPE html>
-        <Head title=title>
-            <></>
-        </Head>
+        <Head title=title />
         <body hx-boost="true" hx-ext="preload" class="bg-lightGrey h-screen">
             <div class="sm:pt-10">
                 <div class="container mx-auto shadow-lg rounded-lg max-w-3xl">

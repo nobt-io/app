@@ -1,7 +1,7 @@
 use rscx::{component, html};
 
 #[component]
-pub fn Head(title: &str, children: String) -> String {
+pub fn Head(title: &str) -> String {
     html! {
         <head>
             <title>{title}</title>
@@ -16,7 +16,6 @@ pub fn Head(title: &str, children: String) -> String {
             <link href="/style.css" rel="stylesheet"/>
             <script src="https://unpkg.com/htmx.org@1.9.6/dist/htmx.js" crossorigin="anonymous" />
             <script src="https://unpkg.com/htmx.org/dist/ext/preload.js" crossorigin="anonymous" />
-            {children}
         </head>
     }
 }
