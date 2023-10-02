@@ -22,12 +22,12 @@ mod landing_page;
 mod components;
 
 const STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
-const TEAM_JS: &str = include_str!("../team.js");
-const NOT_FOUND_IMAGE: &[u8] = include_bytes!("../stock-photo-stack-424916446.jpg");
-const LANDING_PAGE_BACKGROUND_IMAGE: &[u8] = include_bytes!("../landing_page_background.jpg");
-const DAVID_IMAGE: &[u8] = include_bytes!("../david.png");
-const THOMAS_IMAGE: &[u8] = include_bytes!("../thomas.png");
-const MATTHIAS_IMAGE: &[u8] = include_bytes!("../matthias.png");
+const TEAM_JS: &str = include_str!("../assets/team.js");
+const NOT_FOUND_IMAGE: &[u8] = include_bytes!("../assets/stock-photo-stack-424916446.jpg");
+const LANDING_PAGE_BACKGROUND_IMAGE: &[u8] = include_bytes!("../assets/landing_page_background.jpg");
+const DAVID_IMAGE: &[u8] = include_bytes!("../assets/david.png");
+const THOMAS_IMAGE: &[u8] = include_bytes!("../assets/thomas.png");
+const MATTHIAS_IMAGE: &[u8] = include_bytes!("../assets/matthias.png");
 
 #[tokio::main]
 async fn main() -> Result<()> {
