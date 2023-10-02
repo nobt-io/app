@@ -27,7 +27,7 @@ pub async fn index() -> impl IntoResponse {
 
             <section class="h-screen bg-landing-page bg-cover bg-center flex items-center justify-center sm:grid grid-cols-12">
                 <div class="col-span-7 text-right p-10 text-white">
-                    <h1 class="text-4xl font-bold">split your bills</h1>
+                    <h1 class="text-4xl">split your bills</h1>
                     <h2 class="text-3xl font-handWritten mb-10">with ease</h2>
                     <a class="bg-black/60 hover:bg-darkGreen hover:border-darkGreen px-6 py-3 rounded-full text-md border-white border-2 uppercase text-sm" href="/create">Get started - Create a Nobt</a>
                 </div>
@@ -36,15 +36,15 @@ pub async fn index() -> impl IntoResponse {
                 </div>
             </section>
 
-            <section id="about" class="py-20 bg-gray-100">
+            <section id="about" class="py-20 bg-white">
                 <div class="container mx-auto px-4 md:w-3/5">
                     <div class="text-center mb-10">
-                        <h2 class="text-4xl">You will{NBSP}<span class="fa-regular fa-heart text-red"></span>{NBSP}nobt.io</h2>
-                        <p class="mt-4 text-xl">Nobt.io is a free service that solves the tedious task of splitting several bills among your friends with ease.</p>
-                        <p class="mt-2 text-xl">Try it for your holiday.</p> // TODO: Make this dynamic "typewriter" text.
+                        <h2 class="text-3xl">You will{NBSP}<span class="fa-regular fa-heart text-red"></span>{NBSP}nobt.io</h2>
+                        <p class="mt-4">Nobt.io is a free service that solves the tedious task of splitting several bills among your friends with ease.</p>
+                        <p class="mt-2">Try it for your holiday.</p> // TODO: Make this dynamic "typewriter" text.
                     </div>
                     <div class="flex justify-center mt-6">
-                        <a class="bg-darkGreen px-6 py-3 rounded-full text-md text-white uppercase" href="/create">Get started - Create a Nobt</a>
+                        <a class="bg-darkGreen px-6 py-3 rounded-full text-md text-white uppercase text-sm" href="/create">Get started - Create a Nobt</a>
                     </div>
                 </div>
             </section>
@@ -57,7 +57,7 @@ pub async fn index() -> impl IntoResponse {
                                 <i class="fa-solid fa-gauge-high text-4xl text-black"></i>
                             </div>
                             <h3 class="text-2xl mb-4">Easy to Use</h3>
-                            <p>Nobt.io works without registration. Simply create a nobt and share the link with your friends.</p>
+                            <p>"Nobt.io works without registration. Simply create a nobt and share the link with your friends."</p>
                         </div>
 
                         <div class="p-4 text-center">
@@ -65,7 +65,7 @@ pub async fn index() -> impl IntoResponse {
                                 <i class="fa-solid fa-cloud text-4xl text-black"></i>
                             </div>
                             <h3 class="text-2xl mb-4">Available Everywhere</h3>
-                            <p>Nobts are stored in the cloud, so you can access them from any device, anytime, no matter where you are.</p>
+                            <p>"Nobts are stored in the cloud, so you can access them from any device, anytime, no matter where you are."</p>
                         </div>
 
                         <div class="p-4 text-center">
@@ -82,9 +82,9 @@ pub async fn index() -> impl IntoResponse {
             <section id="team" class="py-20 bg-white text-center">
                 <div class="container mx-auto px-4 md:w-3/5">
                     <div class="mb-10">
-                        <h2 class="text-4xl">The team behind nobt.io.</h2>
+                        <h2 class="text-3xl">The team behind nobt.io.</h2>
                         <p class="mt-4">Crafted with{NBSP}<span class="fa-solid fa-mug-saucer"></span>{NBSP}in Vienna and Sydney.</p>
-                        <p class="mt-4">What started as a hackathon by three motivated developers soon turned out to be an actually helpful companion in our daily life. Nobt.io is our effort to share this idea with all of you. We hope you enjoy it as much as we do.</p>
+                        <p class="mt-4">"What started as a hackathon by three motivated developers soon turned out to be an actually helpful companion in our daily life. Nobt.io is our effort to share this idea with all of you. We hope you enjoy it as much as we do."</p>
                     </div>
                     <div>
                         <div id="teamMember1" style="background-position: 0px -600px;" class="group m-2 inline-block h-[200px] w-[200px] bg-[url('/thomas.png')]">
