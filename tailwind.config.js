@@ -6,6 +6,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      backgroundImage: {
+        'landing-page': "url('/landing_page_background.jpg')",
+      },
       colors: {
         grey: '#353535',
         turquoise: '#34aca1',

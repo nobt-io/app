@@ -19,6 +19,7 @@ mod responses;
 
 const STYLES: &str = include_str!(concat!(env!("OUT_DIR"), "/style.css"));
 const NOT_FOUND_IMAGE: &[u8] = include_bytes!("../stock-photo-stack-424916446.jpg");
+const LANDING_PAGE_BACKGROUND_IMAGE: &[u8] = include_bytes!("../landing_page_background.jpg");
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -29,8 +30,10 @@ async fn main() -> Result<()> {
         .context("failed to parse port")?;
 
     let app = Router::new()
+        .route("/", get(index))
         .route("/style.css", get(|| async { Css(STYLES) }))
         .route("/not_found.jpg", get(|| async { Jpeg(NOT_FOUND_IMAGE) }))
+        .route("/landing_page_background.jpg", get(|| async { Jpeg(LANDING_PAGE_BACKGROUND_IMAGE) }))
         .route("/:nobt_id", get(nobt))
         .route("/:nobt_id/bill", get(new_bill))
         .route("/:nobt_id/bill", post(new_bill))
@@ -50,6 +53,55 @@ async fn main() -> Result<()> {
         .await?;
 
     Ok(())
+}
+
+async fn index() -> impl IntoResponse {
+    Html(html! {
+        <!DOCTYPE html>
+        <Head title="nobt.io: Split your bills with ease" />
+        <body hx-boost="true" hx-ext="preload">
+            <header class="bg-transparent fixed top-0 w-full text-white p-5"> // TODO: Perhaps make this change background on scroll.
+                <nav class="flex">
+                    <div class="grow">
+                        <a class="p-4" href="/">nobt.io</a>
+                    </div>
+                    <div class="text-right">
+                        // TODO: Add icons here
+                        <a class="p-4" href="#about">About</a>
+                        <a class="p-4" href="#features">Features</a>
+                        <a class="p-4" href="#team">Team</a>
+                    </div>
+                </nav>
+            </header>
+
+            <section class="h-screen bg-landing-page bg-cover bg-center flex items-center justify-center sm:grid grid-cols-12">
+                <div class="col-span-7 text-right p-10 text-white">
+                    <h1 class="text-4xl font-bold">split your bills</h1>
+                    <h2 class="text-3xl mt-4 mb-6">with ease</h2>
+                    <a class="bg-transparent hover:bg-darkGreen hover:border-darkGreen px-6 py-3 rounded-full text-md border-white border-2 uppercase" href="/create">Get started - Create a Nobt</a>
+                </div>
+                <div class="col-span-5">
+
+                </div>
+            </section>
+
+            <section id="about">
+            </section>
+
+            <section id="features">
+            </section>
+
+            <section id="team">
+            </section>
+
+            // Add icons here
+            <footer>
+                <a href="mailto:hello@nobt.io">Contact Us</a>
+                <a href="https://twitter.com/nobtio">Twitter</a>
+                <a href="https://github.com/nobt-io">GitHub</a>
+            </footer>
+        </body>
+    })
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
