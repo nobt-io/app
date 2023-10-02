@@ -4,10 +4,18 @@ module.exports = {
   content: [
     "src/*.rs"
   ],
+  safelist: [
+    "bg-thomas",
+    "bg-david",
+    "bg-matthias",
+  ],
   theme: {
     extend: {
       backgroundImage: {
         'landing-page': "url('/landing_page_background.jpg')",
+        'thomas': "url('/thomas.png')",
+        'david': "url('/david.png')",
+        'matthias': "url('/matthias.png')",
       },
       colors: {
         grey: '#353535',

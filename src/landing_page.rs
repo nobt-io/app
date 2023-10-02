@@ -87,15 +87,9 @@ pub async fn index() -> impl IntoResponse {
                         <p class="mt-4">"What started as a hackathon by three motivated developers soon turned out to be an actually helpful companion in our daily life. Nobt.io is our effort to share this idea with all of you. We hope you enjoy it as much as we do."</p>
                     </div>
                     <div>
-                        <div id="teamMember1" style="background-position: 0px -600px;" class="group m-2 inline-block h-[200px] w-[200px] bg-[url('/thomas.png')]">
-                            <TeamMember name="Thomas" github="thomaseizinger" linked_in="thomas-eizinger-b45a37144" homepage="https://eizinger.io" />
-                        </div>
-                        <div id="teamMember2" style="background-position: 0px -1000px;" class="group m-2 inline-block h-[200px] w-[200px] bg-[url('/david.png')]">
-                            <TeamMember name="David" github="duffleit" linked_in="David_Leitner4" homepage="https://leitner.io" />
-                        </div>
-                        <div id="teamMember3" style="background-position: 0px -800px;" class="group m-2 inline-block h-[200px] w-[200px] bg-[url('/matthias.png')]">
-                            <TeamMember name="Matthias" github="KreMat" linked_in="Matthias_Kreuzriegler" homepage="https://kreuzriegler.at" />
-                        </div>
+                        <TeamMember name="Thomas" github="thomaseizinger" linked_in="thomas-eizinger-b45a37144" homepage="https://eizinger.io" />
+                        <TeamMember name="David" github="duffleit" linked_in="David_Leitner4" homepage="https://leitner.io" />
+                        <TeamMember name="Matthias" github="KreMat" linked_in="Matthias_Kreuzriegler" homepage="https://kreuzriegler.at" />
                     </div>
                 </div>
             </section>
@@ -113,29 +107,30 @@ pub async fn index() -> impl IntoResponse {
 #[component]
 fn TeamMember(name: &str, github: &str, linked_in: &str, homepage: &str) -> String {
     html! {
-        <div class="invisible group-hover:visible bg-black opacity-80 justify-center w-full h-full text-white flex flex-col gap-4">
-            <h3 class="text-2xl font-handWritten">{name}</h3>
-            <ul class="flex justify-center gap-2">
-                <li>
-                    <a href=format!("https://github.com/{github}") target="_blank">
-                        <i class="text-xl fa-brands fa-github">
-                        </i>
-                    </a>
-                </li>
-                <li>
-                    <a href=format!("https://www.linkedin.com/in/{linked_in}") target="_blank">
-                        <i class="text-xl fa-brands fa-linkedin">
-                        </i>
-                    </a>
-                </li>
-                <li>
-                    <a href=homepage target="_blank">
-                        <i class="text-xl fa-solid fa-house">
-                        </i>
-                    </a>
-                </li>
-            </ul>
+        <div data-team-member=name class=format!("group m-2 inline-block h-[200px] w-[200px] bg-{}", name.to_lowercase())>
+            <div class="invisible group-hover:visible bg-black opacity-80 justify-center w-full h-full text-white flex flex-col gap-4">
+                <h3 class="text-2xl font-handWritten">{name}</h3>
+                <ul class="flex justify-center gap-2">
+                    <li>
+                        <a href=format!("https://github.com/{github}") target="_blank">
+                            <i class="text-xl fa-brands fa-github">
+                            </i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href=format!("https://www.linkedin.com/in/{linked_in}") target="_blank">
+                            <i class="text-xl fa-brands fa-linkedin">
+                            </i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href=homepage target="_blank">
+                            <i class="text-xl fa-solid fa-house">
+                            </i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     }
 }
-

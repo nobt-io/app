@@ -1,19 +1,22 @@
 document.addEventListener('DOMContentLoaded', function() {
-    let teamMember1 = document.getElementById('teamMember1');
-    let teamMember2 = document.getElementById('teamMember2');
-    let teamMember3 = document.getElementById('teamMember3');
+    let teamMembers = document.querySelectorAll('[data-team-member]');
 
     document.addEventListener('mousemove', function(event) {
         let cursorX = event.pageX;
         let cursorY = event.pageY;
 
-        setImageAccordingToMouse(cursorX, cursorY, teamMember1);
-        setImageAccordingToMouse(cursorX, cursorY, teamMember2);
-        setImageAccordingToMouse(cursorX, cursorY, teamMember3);
+        teamMembers.forEach(function(member) {
+            setImageAccordingToMouse(cursorX, cursorY, member);
+        });
     });
 });
 
 function setImageAccordingToMouse(cursorX, cursorY, pictureElement) {
+    if (window.innerWidth <= 640) {
+        setImage(pictureElement, 0);
+        return
+    }
+
     let offsets = getDocumentOffsets(pictureElement);
     let elementX = offsets.x;
 
